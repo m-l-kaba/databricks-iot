@@ -1,0 +1,77 @@
+# Test configuration for IoT Data Generator tests
+# This file is used during unit testing
+
+devices:
+  num_devices: 10
+
+data_periods:
+  telemetry_hours: 2
+  failure_days: 5
+  maintenance_days: 15
+
+telemetry:
+  interval_minutes: 15
+
+sensors:
+  temperature_sensor:
+    reading_type: "temperature"
+    unit: "celsius"
+    base_value: 20.0
+    variance: 5.0
+    min_val: 0.0
+    max_val: 40.0
+
+  humidity_sensor:
+    reading_type: "humidity"
+    unit: "percent"
+    base_value: 50.0
+    variance: 10.0
+    min_val: 0.0
+    max_val: 100.0
+
+data_quality:
+  missing_reading_probability: 0.1
+  quality_weights:
+    good: 0.8
+    fair: 0.15
+    poor: 0.05
+
+simulation:
+  facilities:
+    - "Test_Factory"
+    - "Test_Warehouse"
+
+  locations:
+    Test_Factory:
+      - "Test_Line_1"
+      - "Test_Line_2"
+    Test_Warehouse:
+      - "Test_Zone_A"
+      - "Test_Zone_B"
+
+  manufacturers:
+    - "TestCorp"
+    - "MockDevices"
+
+  device_status_weights:
+    active: 0.9
+    inactive: 0.05
+    maintenance: 0.03
+    failed: 0.02
+
+failures:
+  mtbf_days: 30
+  resolution_probability: 0.9
+
+maintenance:
+  maintenance_probability: 0.8
+  labor_cost_per_hour: 50.0
+
+output:
+  format: "json"
+  directory: "./test_output"
+
+azure:
+  storage_account_name: null
+  storage_account_key: null
+  container_name: "test"

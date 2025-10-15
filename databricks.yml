@@ -1,0 +1,17 @@
+bundle:
+  name: databricks_predictive_maintenance
+  uuid: c5e3bdc2-c4ab-433f-ae7d-969d9e02dc5a
+
+include:
+  - resources/*.yml
+
+targets:
+  prod:
+    mode: production
+    workspace:
+      host: https://adb-3755257619144616.16.azuredatabricks.net
+      # We explicitly deploy to /Workspace/Users/m.leon.kaba@gmail.com to make sure we only have a single copy.
+      root_path: /Workspace/Users/m.leon.kaba@gmail.com/.bundle/${bundle.name}/${bundle.target}
+    permissions:
+      - user_name: m.leon.kaba@gmail.com
+        level: CAN_MANAGE

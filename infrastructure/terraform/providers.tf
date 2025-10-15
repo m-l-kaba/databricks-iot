@@ -11,15 +11,25 @@ terraform {
   backend "local" {
     path = "terraform.tfstate"
   }
-#   backend "azurerm" {
-#     container_name      = "tfstate"
-#     key                 = "terraform.tfstate"
-#     resource_group_name = "faers-lakehouse-rg"
-#     storage_account_name = "faerslakehouse"
-#   }
 }
 
 
 provider "azurerm" {
   features {}
+}
+
+provider "databricks" {
+  alias                       = "workspace"
+  azure_workspace_resource_id = module.azure_resources.databricks_workspace_id
+  host                        = module.azure_resources.databricks_workspace_url
+  profile                     = "DEFAULT"
+}
+
+provider "databricks" {
+  alias      = "admin"
+  host       = "https://accounts.azuredatabricks.net"
+  account_id = var.account_id
+  profile    = "DEFAULT"
+
+
 }

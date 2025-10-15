@@ -1,0 +1,14 @@
+[
+  {
+    "event_id": "0495a085-5d94-4f86-8ac0-6f1313e76919",
+    "device_id": "DEV_TEMPERATURE_SENSOR_0017",
+    "timestamp": "2025-10-04T16:21:51.885942",
+    "failure_type": "mechanical_failure",
+    "severity": "low",
+    "description": "Mechanical component failure",
+    "location": "Security_Entrance",
+    "facility": "Office_Complex",
+    "resolved": true,
+    "resolution_time": "2025-10-04T20:21:51.885942"
+  }
+]

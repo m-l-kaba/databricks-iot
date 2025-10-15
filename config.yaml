@@ -1,0 +1,249 @@
+# IoT Data Generator Configuration
+# This file contains all configuration settings for the IoT data simulator
+
+# Device configuration
+devices:
+  num_devices: 100
+
+# Data generation periods
+data_periods:
+  telemetry_hours: 24 # Hours of telemetry data to generate
+  failure_days: 30 # Days of failure events to generate
+  maintenance_days: 90 # Days of maintenance records to generate
+
+# Telemetry settings
+telemetry:
+  interval_minutes: 5 # Interval between telemetry readings in minutes
+
+# Sensor configuration for different device types
+sensors:
+  temperature_sensor:
+    reading_type: "temperature"
+    unit: "celsius"
+    base_value: 25.0
+    variance: 15.0
+    min_val: -10.0
+    max_val: 80.0
+
+  humidity_sensor:
+    reading_type: "humidity"
+    unit: "percent"
+    base_value: 45.0
+    variance: 20.0
+    min_val: 0.0
+    max_val: 100.0
+
+  pressure_sensor:
+    reading_type: "pressure"
+    unit: "bar"
+    base_value: 1.0
+    variance: 0.5
+    min_val: 0.0
+    max_val: 10.0
+
+  vibration_sensor:
+    reading_type: "vibration"
+    unit: "hz"
+    base_value: 50.0
+    variance: 30.0
+    min_val: 0.0
+    max_val: 200.0
+
+  flow_meter:
+    reading_type: "flow_rate"
+    unit: "l/min"
+    base_value: 100.0
+    variance: 50.0
+    min_val: 0.0
+    max_val: 500.0
+
+  power_meter:
+    reading_type: "power"
+    unit: "kw"
+    base_value: 50.0
+    variance: 30.0
+    min_val: 0.0
+    max_val: 200.0
+
+  smart_valve:
+    reading_type: "position"
+    unit: "percent"
+    base_value: 50.0
+    variance: 40.0
+    min_val: 0.0
+    max_val: 100.0
+
+  motor_controller:
+    reading_type: "rpm"
+    unit: "rpm"
+    base_value: 1800.0
+    variance: 400.0
+    min_val: 0.0
+    max_val: 3600.0
+
+# Data quality settings
+data_quality:
+  missing_reading_probability: 0.05 # 5% chance of missing reading
+  quality_weights:
+    good: 0.9
+    fair: 0.08
+    poor: 0.02
+
+# Device simulation settings
+simulation:
+  facilities:
+    - "Factory_A"
+    - "Factory_B"
+    - "Warehouse_1"
+    - "Warehouse_2"
+    - "Office_Complex"
+
+  locations:
+    Factory_A:
+      - "Production_Line_1"
+      - "Production_Line_2"
+      - "Quality_Control"
+      - "Packaging"
+    Factory_B:
+      - "Assembly_1"
+      - "Assembly_2"
+      - "Testing_Bay"
+      - "Shipping_Dock"
+    Warehouse_1:
+      - "Storage_Zone_A"
+      - "Storage_Zone_B"
+      - "Loading_Dock"
+      - "Climate_Control"
+    Warehouse_2:
+      - "Cold_Storage"
+      - "Dry_Storage"
+      - "Processing_Area"
+      - "Dispatch"
+    Office_Complex:
+      - "HVAC_System"
+      - "Security_Entrance"
+      - "Server_Room"
+      - "Conference_Area"
+
+  manufacturers:
+    - "SensorTech"
+    - "IoTCorp"
+    - "SmartDevices"
+    - "IndustryConnect"
+    - "TechFlow"
+
+  # Device status distribution weights
+  device_status_weights:
+    active: 0.8
+    inactive: 0.1
+    maintenance: 0.05
+    failed: 0.05
+
+# Failure simulation settings
+failures:
+  # Average Mean Time Between Failures in days
+  mtbf_days: 90
+
+  # Failure severity weights by failure type
+  severity_weights:
+    sensor_malfunction:
+      low: 0.6
+      medium: 0.3
+      high: 0.1
+    communication_failure:
+      low: 0.4
+      medium: 0.5
+      high: 0.1
+    power_failure:
+      low: 0.2
+      medium: 0.4
+      high: 0.4
+    mechanical_failure:
+      low: 0.3
+      medium: 0.4
+      high: 0.3
+    software_error:
+      low: 0.7
+      medium: 0.2
+      high: 0.1
+    calibration_drift:
+      low: 0.8
+      medium: 0.2
+      high: 0.0
+
+  # Resolution probability
+  resolution_probability: 0.85
+
+  # Resolution time by severity (in hours)
+  resolution_time_hours:
+    low:
+      min: 1
+      max: 8
+    medium:
+      min: 4
+      max: 24
+    high:
+      min: 8
+      max: 72
+
+# Maintenance simulation settings
+maintenance:
+  # Probability a device has maintenance in the specified period
+  maintenance_probability: 0.7
+
+  # Maintenance type weights
+  type_weights:
+    preventive: 0.6
+    corrective: 0.2
+    predictive: 0.15
+    emergency: 0.05
+
+  # Duration ranges by maintenance type (in hours)
+  duration_hours:
+    preventive:
+      min: 1.0
+      max: 4.0
+    corrective:
+      min: 2.0
+      max: 8.0
+    predictive:
+      min: 0.5
+      max: 2.0
+    emergency:
+      min: 4.0
+      max: 12.0
+
+  # Cost calculation
+  labor_cost_per_hour: 75.0
+  parts_cost_range:
+    min: 50.0
+    max: 200.0
+
+  # Parts that might be replaced
+  available_parts:
+    - "sensor_calibration"
+    - "filter_replacement"
+    - "cable_connector"
+    - "battery_backup"
+    - "firmware_update"
+    - "mounting_bracket"
+    - "protective_housing"
+    - "communication_module"
+
+  # Number of parts replaced weights
+  parts_count_weights:
+    0: 0.4
+    1: 0.4
+    2: 0.15
+    3: 0.05
+
+# Output settings
+output:
+  format: "json" # json, parquet, csv
+  directory: "./output"
+
+# Azure Data Lake settings (optional, can be overridden by environment variables)
+azure:
+  storage_account_name: null # Set via AZURE_STORAGE_ACCOUNT_NAME env var
+  storage_account_key: null # Set via AZURE_STORAGE_ACCOUNT_KEY env var
+  container_name: "raw"

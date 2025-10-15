@@ -1,0 +1,15 @@
+# The main pipeline for databricks_predictive_maintenance
+resources:
+  pipelines:
+    databricks_predictive_maintenance_pipeline:
+      name: databricks_predictive_maintenance_pipeline
+      ## Catalog is required for serverless compute
+      catalog: main
+      schema: databricks_predictive_maintenance_${bundle.target}
+      serverless: true
+      libraries:
+        - notebook:
+            path: ../src/pipeline.ipynb
+
+      configuration:
+        bundle.sourcePath: ${workspace.file_path}/src
