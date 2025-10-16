@@ -4,12 +4,18 @@ resources:
     databricks_predictive_maintenance_pipeline:
       name: databricks_predictive_maintenance_pipeline
       ## Catalog is required for serverless compute
-      catalog: main
-      schema: databricks_predictive_maintenance_${bundle.target}
+      catalog: production
+      schema: raw
       serverless: true
+
+      # Pipeline libraries (DLT notebooks)
       libraries:
         - notebook:
-            path: ../src/pipeline.ipynb
+            path: ../src/lakehouse/bronze/bronze_ingestion.py
+        - notebook:
+            path: ../src/lakehouse/silver/silver_cleansing.py
+        - notebook:
+            path: ../src/lakehouse/gold/gold_features.py
 
-      configuration:
-        bundle.sourcePath: ${workspace.file_path}/src
+      # Development vs Production settings
+      continuous: false
