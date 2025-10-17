@@ -86,10 +86,13 @@ class TelemetryReading:
 
     device_id: str
     timestamp: str
-    reading_type: str
-    value: float
-    unit: str
-    quality: str
+    temperature: float
+    pressure: float
+    vibration: float
+    humidity: float
+    power_consumption: float
+    flow_rate: float
+    motor_speed: float
     location: str
     facility: str
 
@@ -98,16 +101,15 @@ class TelemetryReading:
 class FailureEvent:
     """Device failure event"""
 
-    event_id: str
+    failure_id: str
     device_id: str
-    timestamp: str
+    failure_timestamp: str
+    repair_timestamp: str
     failure_type: str
     severity: str
-    description: str
-    location: str
-    facility: str
-    resolved: bool
-    resolution_time: Optional[str] = None
+    root_cause: str
+    cost: float
+    downtime_minutes: int
 
 
 @dataclass
@@ -118,14 +120,13 @@ class MaintenanceRecord:
     device_id: str
     maintenance_type: str
     scheduled_date: str
-    actual_date: str
-    duration_hours: float
+    maintenance_date: str
+    duration_minutes: int
     technician_id: str
     description: str
-    parts_replaced: List[str]
     cost: float
-    location: str
-    facility: str
+    parts_used: str
+    maintenance_notes: str
 
 
 class IoTDataGenerator:
@@ -167,8 +168,11 @@ class IoTDataGenerator:
             )
             next_maintenance = self._random_date_in_future(days=90)  # Next 3 months
 
+            # Use consistent device ID format for all devices
+            device_id = f"DEV_{str(i+1).zfill(3)}"  # DEV_001, DEV_002, etc.
+
             device = Device(
-                device_id=f"DEV_{device_type.value.upper()}_{i:04d}",
+                device_id=device_id,
                 device_type=device_type.value,
                 location=location,
                 facility=facility,
@@ -243,38 +247,54 @@ class IoTDataGenerator:
                 if random.random() > (1 - missing_prob):
                     continue
 
-                config = self._get_sensor_reading_config(device.device_type)
-
-                # Generate realistic sensor reading with some drift and noise
-                base_value = config["base_value"]
-                variance = config["variance"]
-
-                # Add time-based patterns (e.g., temperature cycles)
+                # Generate realistic sensor readings with time-based patterns
                 time_factor = math.sin(2 * math.pi * current_time.hour / 24)
-                seasonal_drift = time_factor * variance * 0.3
 
-                # Add random noise
-                noise = random.gauss(0, variance * 0.1)
+                # Temperature (20-90°C)
+                temp_base = 60.0
+                temperature = temp_base + time_factor * 15 + random.gauss(0, 5)
+                temperature = max(20, min(90, temperature))
 
-                value = base_value + seasonal_drift + noise
-                value = max(config["min_val"], min(config["max_val"], value))
+                # Pressure (800-1200 PSI)
+                pressure_base = 1000.0
+                pressure = pressure_base + random.gauss(0, 100)
+                pressure = max(800, min(1200, pressure))
 
-                # Quality indicator
-                quality_weights = quality_config.get(
-                    "quality_weights", {"good": 0.9, "fair": 0.08, "poor": 0.02}
-                )
-                quality = random.choices(
-                    list(quality_weights.keys()),
-                    weights=list(quality_weights.values()),
-                )[0]
+                # Vibration (2-15 Hz)
+                vibration_base = 8.0
+                vibration = vibration_base + random.gauss(0, 2)
+                vibration = max(2, min(15, vibration))
+
+                # Humidity (30-70%)
+                humidity_base = 50.0
+                humidity = humidity_base + time_factor * 10 + random.gauss(0, 5)
+                humidity = max(30, min(70, humidity))
+
+                # Power consumption (100-600W)
+                power_base = 350.0
+                power_consumption = power_base + random.gauss(0, 50)
+                power_consumption = max(100, min(600, power_consumption))
+
+                # Flow rate (10-50 L/min)
+                flow_rate_base = 30.0
+                flow_rate = flow_rate_base + random.gauss(0, 5)
+                flow_rate = max(10, min(50, flow_rate))
+
+                # Motor speed (1000-3000 RPM)
+                motor_speed_base = 2000.0
+                motor_speed = motor_speed_base + random.gauss(0, 200)
+                motor_speed = max(1000, min(3000, motor_speed))
 
                 reading = TelemetryReading(
                     device_id=device.device_id,
-                    timestamp=current_time.isoformat(),
-                    reading_type=config["reading_type"],
-                    value=round(value, 2),
-                    unit=config["unit"],
-                    quality=quality,
+                    timestamp=current_time.isoformat() + "Z",
+                    temperature=round(temperature, 2),
+                    pressure=round(pressure, 2),
+                    vibration=round(vibration, 2),
+                    humidity=round(humidity, 2),
+                    power_consumption=round(power_consumption, 2),
+                    flow_rate=round(flow_rate, 2),
+                    motor_speed=round(motor_speed, 2),
                     location=device.location,
                     facility=device.facility,
                 )
@@ -299,68 +319,54 @@ class IoTDataGenerator:
 
         for _ in range(expected_failures):
             device = random.choice(self.devices)
-            failure_type = random.choice(list(FailureType))
 
             # Failure timestamp in the last 'days' period
             failure_time = self._random_date_in_past(days)
 
-            # Get severity weights from configuration
-            failure_config = self.config.get("failures", {})
-            severity_weights_config = failure_config.get("severity_weights", {})
-
-            # Severity based on failure type
-            default_weights = [0.6, 0.3, 0.1]  # [low, medium, high]
-            failure_type_config = severity_weights_config.get(failure_type.value, {})
-
-            if failure_type_config:
-                weights = [
-                    failure_type_config.get("low", 0.6),
-                    failure_type_config.get("medium", 0.3),
-                    failure_type_config.get("high", 0.1),
-                ]
-            else:
-                weights = default_weights
-
-            severity = random.choices(["low", "medium", "high"], weights=weights)[0]
-
-            # Resolution status and time
-            resolution_probability = failure_config.get("resolution_probability", 0.85)
-            resolved = random.choices(
-                [True, False],
-                weights=[resolution_probability, 1 - resolution_probability],
+            # Generate severity with focus on major/critical for ML training
+            severity = random.choices(
+                ["minor", "major", "critical"],
+                weights=[0.3, 0.5, 0.2],  # Focus on major/critical
             )[0]
-            resolution_time = None
-            if resolved:
-                # Resolution time based on severity from configuration
-                resolution_config = failure_config.get("resolution_time_hours", {})
-                severity_config = resolution_config.get(severity, {"min": 1, "max": 8})
-                resolution_hours = random.randint(
-                    severity_config.get("min", 1), severity_config.get("max", 8)
-                )
-                resolution_time = (
-                    failure_time + timedelta(hours=resolution_hours)
-                ).isoformat()
 
-            descriptions = {
-                FailureType.SENSOR_MALFUNCTION: "Sensor reading outside normal range",
-                FailureType.COMMUNICATION_FAILURE: "Device lost network connectivity",
-                FailureType.POWER_FAILURE: "Power supply interruption detected",
-                FailureType.MECHANICAL_FAILURE: "Mechanical component failure",
-                FailureType.SOFTWARE_ERROR: "Software exception occurred",
-                FailureType.CALIBRATION_DRIFT: "Sensor calibration outside tolerance",
-            }
+            # Repair time based on severity
+            if severity == "critical":
+                repair_hours = random.randint(4, 48)
+            elif severity == "major":
+                repair_hours = random.randint(2, 24)
+            else:
+                repair_hours = random.randint(1, 8)
+
+            repair_time = failure_time + timedelta(hours=repair_hours)
+            downtime_minutes = repair_hours * 60
+
+            # Cost based on severity
+            if severity == "critical":
+                cost = random.uniform(2000, 10000)
+            elif severity == "major":
+                cost = random.uniform(500, 3000)
+            else:
+                cost = random.uniform(100, 800)
+
+            failure_types = [
+                "mechanical",
+                "electrical",
+                "sensor",
+                "software",
+                "thermal",
+            ]
+            root_causes = ["wear", "overheating", "vibration", "corrosion", "fatigue"]
 
             failure = FailureEvent(
-                event_id=str(uuid.uuid4()),
+                failure_id=f"FAIL_{device.device_id}_{str(uuid.uuid4())[:8]}",
                 device_id=device.device_id,
-                timestamp=failure_time.isoformat(),
-                failure_type=failure_type.value,
+                failure_timestamp=failure_time.isoformat() + "Z",
+                repair_timestamp=repair_time.isoformat() + "Z",
+                failure_type=random.choice(failure_types),
                 severity=severity,
-                description=descriptions[failure_type],
-                location=device.location,
-                facility=device.facility,
-                resolved=resolved,
-                resolution_time=resolution_time,
+                root_cause=random.choice(root_causes),
+                cost=round(cost, 2),
+                downtime_minutes=downtime_minutes,
             )
 
             failure_events.append(asdict(failure))
@@ -379,20 +385,15 @@ class IoTDataGenerator:
         for device in self.devices:
             # Most devices should have at least one maintenance in the specified period
             if random.random() < maintenance_probability:
-                # Get maintenance type weights from configuration
-                type_weights_config = maintenance_config.get("type_weights", {})
-                maintenance_types = (
-                    list(type_weights_config.keys())
-                    if type_weights_config
-                    else [t.value for t in MaintenanceType]
-                )
-                weights = (
-                    list(type_weights_config.values())
-                    if type_weights_config
-                    else [0.6, 0.2, 0.15, 0.05]
-                )
-
-                maintenance_type = random.choices(maintenance_types, weights=weights)[0]
+                maintenance_types = [
+                    "preventive",
+                    "corrective",
+                    "predictive",
+                    "emergency",
+                ]
+                maintenance_type = random.choices(
+                    maintenance_types, weights=[0.6, 0.2, 0.15, 0.05]
+                )[0]
 
                 # Scheduled vs actual date variance
                 scheduled_date = self._random_date_in_past(days)
@@ -405,58 +406,39 @@ class IoTDataGenerator:
                     variance_hours = random.randint(-24, 48)  # -1 day to +2 days
                     actual_date = scheduled_date + timedelta(hours=variance_hours)
 
-                # Duration based on maintenance type from configuration
-                duration_config = maintenance_config.get("duration_hours", {})
-                type_duration = duration_config.get(
-                    maintenance_type, {"min": 1.0, "max": 4.0}
-                )
-                min_duration = type_duration.get("min", 1.0)
-                max_duration = type_duration.get("max", 4.0)
-                duration = round(random.uniform(min_duration, max_duration), 1)
+                # Duration in minutes
+                if maintenance_type == "emergency":
+                    duration_minutes = random.randint(60, 480)  # 1-8 hours
+                elif maintenance_type == "corrective":
+                    duration_minutes = random.randint(120, 360)  # 2-6 hours
+                else:
+                    duration_minutes = random.randint(60, 240)  # 1-4 hours
 
-                # Parts that might be replaced from configuration
-                all_parts = maintenance_config.get(
-                    "available_parts",
-                    [
-                        "sensor_calibration",
-                        "filter_replacement",
-                        "cable_connector",
-                        "battery_backup",
-                        "firmware_update",
-                        "mounting_bracket",
-                        "protective_housing",
-                        "communication_module",
-                    ],
-                )
+                # Parts that might be used
+                all_parts = [
+                    "sensor_calibration",
+                    "filter_replacement",
+                    "cable_connector",
+                    "battery_backup",
+                    "firmware_update",
+                    "mounting_bracket",
+                    "protective_housing",
+                    "communication_module",
+                ]
 
-                # Number of parts replaced based on configuration weights
-                parts_count_weights = maintenance_config.get(
-                    "parts_count_weights", {0: 0.4, 1: 0.4, 2: 0.15, 3: 0.05}
-                )
-                num_parts = random.choices(
-                    list(parts_count_weights.keys()),
-                    weights=list(parts_count_weights.values()),
-                )[0]
-                parts_replaced = (
+                num_parts = random.randint(0, 3)
+                parts_used = ", ".join(
                     random.sample(all_parts, min(num_parts, len(all_parts)))
-                    if num_parts > 0
-                    else []
                 )
 
-                # Cost based on duration and parts from configuration
-                labor_cost_per_hour = maintenance_config.get(
-                    "labor_cost_per_hour", 75.0
+                # Cost based on duration and parts
+                labor_cost = (duration_minutes / 60) * 75.0  # $75/hour
+                parts_cost = (
+                    len(parts_used.split(", ")) * random.uniform(50, 200)
+                    if parts_used
+                    else 0
                 )
-                parts_cost_range = maintenance_config.get(
-                    "parts_cost_range", {"min": 50.0, "max": 200.0}
-                )
-
-                base_cost = duration * labor_cost_per_hour
-                parts_cost = len(parts_replaced) * random.uniform(
-                    parts_cost_range.get("min", 50.0),
-                    parts_cost_range.get("max", 200.0),
-                )
-                total_cost = round(base_cost + parts_cost, 2)
+                total_cost = round(labor_cost + parts_cost, 2)
 
                 descriptions = {
                     "preventive": "Routine preventive maintenance check",
@@ -466,18 +448,17 @@ class IoTDataGenerator:
                 }
 
                 maintenance = MaintenanceRecord(
-                    maintenance_id=str(uuid.uuid4()),
+                    maintenance_id=f"MAINT_{device.device_id}_{str(uuid.uuid4())[:8]}",
                     device_id=device.device_id,
                     maintenance_type=maintenance_type,
-                    scheduled_date=scheduled_date.isoformat(),
-                    actual_date=actual_date.isoformat(),
-                    duration_hours=duration,
+                    scheduled_date=scheduled_date.isoformat() + "Z",
+                    maintenance_date=actual_date.isoformat() + "Z",
+                    duration_minutes=duration_minutes,
                     technician_id=f"TECH_{random.randint(1001, 1050)}",
                     description=descriptions[maintenance_type],
-                    parts_replaced=parts_replaced,
                     cost=total_cost,
-                    location=device.location,
-                    facility=device.facility,
+                    parts_used=parts_used,
+                    maintenance_notes=f"Maintenance completed successfully for {device.device_id}",
                 )
 
                 maintenance_records.append(asdict(maintenance))
@@ -531,19 +512,19 @@ def main():
 
     config = load_config()
 
-    # Override for demo
-    config.num_devices = 50
+    # Override for demo with more devices and longer time range
+    config.num_devices = 100  # Increased from 50
 
     # Initialize generator with configuration
     generator = IoTDataGenerator(config=config)
 
     print(f"Generated {len(generator.devices)} devices")
 
-    # Generate all data types
+    # Generate all data types with longer time ranges for better ML training
     all_data = generator.generate_all_data(
-        telemetry_hours=48,  # 48 hours of telemetry data
-        failure_days=30,  # 30 days of failure events
-        maintenance_days=90,  # 90 days of maintenance records
+        telemetry_hours=168,  # 7 days of telemetry data (was 48)
+        failure_days=180,  # 6 months of failure events (was 30)
+        maintenance_days=365,  # 1 year of maintenance records (was 90)
     )
 
     # Print summary statistics
@@ -556,6 +537,22 @@ def main():
     print("\nFiles saved:")
     for data_type, path in file_paths.items():
         print(f"  {data_type}: {path}")
+
+    # Print device ID samples to verify consistency
+    print(f"\nSample Device IDs:")
+    device_ids = [d["device_id"] for d in all_data["device_master"][:5]]
+    print(f"Device Master: {device_ids}")
+
+    telemetry_ids = list(set([t["device_id"] for t in all_data["telemetry"][:20]]))[:5]
+    print(f"Telemetry: {telemetry_ids}")
+
+    if all_data["failures"]:
+        failure_ids = list(set([f["device_id"] for f in all_data["failures"]]))[:5]
+        print(f"Failures: {failure_ids}")
+
+    if all_data["maintenance"]:
+        maint_ids = list(set([m["device_id"] for m in all_data["maintenance"]]))[:5]
+        print(f"Maintenance: {maint_ids}")
 
 
 if __name__ == "__main__":
