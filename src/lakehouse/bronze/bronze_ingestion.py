@@ -48,6 +48,8 @@ telemetry_schema = StructType(
         StructField("flow_rate", DoubleType(), True),
         StructField("valve_position", DoubleType(), True),
         StructField("motor_speed", DoubleType(), True),
+        StructField("location", StringType(), True),
+        StructField("facility", StringType(), True),
     ]
 )
 
@@ -108,6 +110,7 @@ def telemetry_raw():
     return (
         spark.readStream.format("cloudFiles")
         .option("cloudFiles.format", "json")
+        .option("multiline", "true")
         .option(
             "cloudFiles.schemaLocation",
             "/Volumes/production/raw/landing-volume/schemas/telemetry/",
@@ -139,6 +142,7 @@ def device_master_raw():
     return (
         spark.readStream.format("cloudFiles")
         .option("cloudFiles.format", "json")
+        .option("multiline", "true")
         .option(
             "cloudFiles.schemaLocation",
             "/Volumes/production/raw/landing-volume/schemas/device_master/",
@@ -169,6 +173,7 @@ def maintenance_raw():
     return (
         spark.readStream.format("cloudFiles")
         .option("cloudFiles.format", "json")
+        .option("multiline", "true")
         .option(
             "cloudFiles.schemaLocation",
             "/Volumes/production/raw/landing-volume/schemas/maintenance/",
@@ -199,6 +204,7 @@ def failures_raw():
     return (
         spark.readStream.format("cloudFiles")
         .option("cloudFiles.format", "json")
+        .option("multiline", "true")
         .option(
             "cloudFiles.schemaLocation",
             "/Volumes/production/raw/landing-volume/schemas/failures/",

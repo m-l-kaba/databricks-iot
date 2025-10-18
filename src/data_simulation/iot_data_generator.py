@@ -92,6 +92,7 @@ class TelemetryReading:
     humidity: float
     power_consumption: float
     flow_rate: float
+    valve_position: float
     motor_speed: float
     location: str
     facility: str
@@ -108,8 +109,8 @@ class FailureEvent:
     failure_type: str
     severity: str
     root_cause: str
+    repair_action: str
     cost: float
-    downtime_minutes: int
 
 
 @dataclass
@@ -122,11 +123,10 @@ class MaintenanceRecord:
     scheduled_date: str
     maintenance_date: str
     duration_minutes: int
-    technician_id: str
+    technician: str
     description: str
     cost: float
-    parts_used: str
-    maintenance_notes: str
+    parts_replaced: str
 
 
 class IoTDataGenerator:
@@ -154,19 +154,29 @@ class IoTDataGenerator:
         self._generate_device_master_data()
 
     def _generate_device_master_data(self) -> None:
-        """Generate master data for all devices"""
+        """Generate master data for all devices with coherent relationships"""
         for i in range(self.num_devices):
             device_type = random.choice(list(DeviceType))
             facility = random.choice(self.facilities)
             location = random.choice(self.locations[facility])
 
+            # Ensure temporal coherence: installation -> last_maintenance -> now -> next_maintenance
             installation_date = self._random_date_in_past(
                 days=365 * 3
             )  # Up to 3 years ago
+
+            # Last maintenance must be after installation but before now
             last_maintenance = self._random_date_between(
-                installation_date, datetime.now()
+                installation_date, datetime.now() - timedelta(days=1)
             )
-            next_maintenance = self._random_date_in_future(days=90)  # Next 3 months
+
+            # Next maintenance should be in the future, but some devices may be overdue
+            if random.random() < 0.15:  # 15% of devices overdue for maintenance
+                next_maintenance = self._random_date_between(
+                    last_maintenance, datetime.now() - timedelta(days=1)
+                )
+            else:
+                next_maintenance = self._random_date_in_future(days=90)  # Next 3 months
 
             # Use consistent device ID format for all devices
             device_id = f"DEV_{str(i+1).zfill(3)}"  # DEV_001, DEV_002, etc.
@@ -176,7 +186,8 @@ class IoTDataGenerator:
                 device_type=device_type.value,
                 location=location,
                 facility=facility,
-                installation_date=installation_date.isoformat(),
+                installation_date=installation_date.isoformat()
+                + ".000000",  # Match expected format
                 firmware_version=f"{random.randint(1,5)}.{random.randint(0,9)}.{random.randint(0,9)}",
                 model=f"{device_type.value.upper()}-{random.randint(100,999)}",
                 manufacturer=random.choice(self.manufacturers),
@@ -184,8 +195,8 @@ class IoTDataGenerator:
                     list(self.device_status_weights.keys()),
                     weights=list(self.device_status_weights.values()),
                 )[0],
-                last_maintenance=last_maintenance.isoformat(),
-                next_scheduled_maintenance=next_maintenance.isoformat(),
+                last_maintenance=last_maintenance.isoformat() + ".000000",
+                next_scheduled_maintenance=next_maintenance.isoformat() + ".000000",
             )
             self.devices.append(device)
 
@@ -230,7 +241,9 @@ class IoTDataGenerator:
         """Generate telemetry data for specified time period"""
         telemetry_data = []
 
-        end_time = datetime.now()
+        # Use a coordinated timeline that enables predictive maintenance
+        # End telemetry data a few days ago to allow for future failure prediction
+        end_time = datetime.now() - timedelta(days=3)
         start_time = end_time - timedelta(hours=hours)
         current_time = start_time
 
@@ -285,15 +298,20 @@ class IoTDataGenerator:
                 motor_speed = motor_speed_base + random.gauss(0, 200)
                 motor_speed = max(1000, min(3000, motor_speed))
 
+                # Add missing valve_position field expected by bronze schema
+                valve_position = random.uniform(0, 100)  # 0-100% open
+
                 reading = TelemetryReading(
                     device_id=device.device_id,
-                    timestamp=current_time.isoformat() + "Z",
+                    timestamp=current_time.isoformat()
+                    + ".000000",  # Match expected format
                     temperature=round(temperature, 2),
                     pressure=round(pressure, 2),
                     vibration=round(vibration, 2),
                     humidity=round(humidity, 2),
                     power_consumption=round(power_consumption, 2),
                     flow_rate=round(flow_rate, 2),
+                    valve_position=round(valve_position, 2),
                     motor_speed=round(motor_speed, 2),
                     location=device.location,
                     facility=device.facility,
@@ -306,7 +324,7 @@ class IoTDataGenerator:
         return telemetry_data
 
     def generate_failure_events(self, days: int = 30) -> List[Dict[str, Any]]:
-        """Generate failure events for specified time period"""
+        """Generate failure events for specified time period with proper coherence"""
         failure_events = []
 
         # Get failure configuration
@@ -314,14 +332,42 @@ class IoTDataGenerator:
         mtbf_days = failure_config.get("mtbf_days", 90)
 
         # Calculate expected number of failures based on device count and time
-        # Assume average MTBF (Mean Time Between Failures) from configuration
+        # Only generate failures for devices that have been installed
         expected_failures = max(1, int(self.num_devices * days / mtbf_days))
 
-        for _ in range(expected_failures):
-            device = random.choice(self.devices)
+        # Only generate failures for active devices (coherence check)
+        active_devices = [
+            d for d in self.devices if d.status in ["active", "maintenance"]
+        ]
 
-            # Failure timestamp in the last 'days' period
-            failure_time = self._random_date_in_past(days)
+        for _ in range(expected_failures):
+            if not active_devices:
+                break
+
+            device = random.choice(active_devices)
+
+            # Ensure failure happens after device installation and last maintenance
+            device_install_date = datetime.fromisoformat(
+                device.installation_date.replace(".000000", "")
+            )
+            device_last_maintenance = datetime.fromisoformat(
+                device.last_maintenance.replace(".000000", "")
+            )
+
+            # Failure should be after installation and recent maintenance
+            earliest_failure_date = max(device_install_date, device_last_maintenance)
+
+            # For predictive maintenance, failures should occur after telemetry data
+            # Telemetry ends 3 days ago, so failures should be in the last 3 days
+            telemetry_end = datetime.now() - timedelta(days=3)
+
+            # Failure timestamp should be recent (within last 3 days) to enable prediction
+            max_days_recent = 3  # Failures in the last 3 days
+            failure_time = datetime.now() - timedelta(
+                days=random.randint(0, max_days_recent),
+                hours=random.randint(0, 23),
+                minutes=random.randint(0, 59),
+            )
 
             # Generate severity with focus on major/critical for ML training
             severity = random.choices(
@@ -348,25 +394,34 @@ class IoTDataGenerator:
             else:
                 cost = random.uniform(100, 800)
 
+            # Map failure types to match expected schema
             failure_types = [
-                "mechanical",
-                "electrical",
-                "sensor",
-                "software",
-                "thermal",
+                "mechanical_failure",
+                "sensor_malfunction",
+                "power_failure",
+                "software_error",
+                "calibration_drift",
             ]
             root_causes = ["wear", "overheating", "vibration", "corrosion", "fatigue"]
+            repair_actions = [
+                "component_replacement",
+                "calibration_adjustment",
+                "software_update",
+                "cleaning_maintenance",
+                "connection_repair",
+            ]
 
             failure = FailureEvent(
                 failure_id=f"FAIL_{device.device_id}_{str(uuid.uuid4())[:8]}",
                 device_id=device.device_id,
-                failure_timestamp=failure_time.isoformat() + "Z",
-                repair_timestamp=repair_time.isoformat() + "Z",
+                failure_timestamp=failure_time.isoformat()
+                + ".000000",  # Match expected format
+                repair_timestamp=repair_time.isoformat() + ".000000",
                 failure_type=random.choice(failure_types),
                 severity=severity,
                 root_cause=random.choice(root_causes),
+                repair_action=random.choice(repair_actions),
                 cost=round(cost, 2),
-                downtime_minutes=downtime_minutes,
             )
 
             failure_events.append(asdict(failure))
@@ -381,7 +436,7 @@ class IoTDataGenerator:
         maintenance_config = self.config.get("maintenance", {})
         maintenance_probability = maintenance_config.get("maintenance_probability", 0.7)
 
-        # Generate scheduled maintenance for devices
+        # Generate scheduled maintenance for devices with temporal coherence
         for device in self.devices:
             # Most devices should have at least one maintenance in the specified period
             if random.random() < maintenance_probability:
@@ -395,8 +450,20 @@ class IoTDataGenerator:
                     maintenance_types, weights=[0.6, 0.2, 0.15, 0.05]
                 )[0]
 
-                # Scheduled vs actual date variance
-                scheduled_date = self._random_date_in_past(days)
+                # Ensure maintenance happens after device installation
+                device_install_date = datetime.fromisoformat(
+                    device.installation_date.replace(".000000", "")
+                )
+
+                # Maintenance should be between installation and now
+                max_days_back = min(days, (datetime.now() - device_install_date).days)
+                if max_days_back <= 0:
+                    continue  # Skip if device too new
+
+                scheduled_date = datetime.now() - timedelta(
+                    days=random.randint(1, max_days_back)
+                )
+
                 if maintenance_type == "emergency":
                     actual_date = (
                         scheduled_date  # Emergency maintenance happens immediately
@@ -451,14 +518,13 @@ class IoTDataGenerator:
                     maintenance_id=f"MAINT_{device.device_id}_{str(uuid.uuid4())[:8]}",
                     device_id=device.device_id,
                     maintenance_type=maintenance_type,
-                    scheduled_date=scheduled_date.isoformat() + "Z",
-                    maintenance_date=actual_date.isoformat() + "Z",
+                    scheduled_date=scheduled_date.isoformat() + ".000000",
+                    maintenance_date=actual_date.isoformat() + ".000000",
                     duration_minutes=duration_minutes,
-                    technician_id=f"TECH_{random.randint(1001, 1050)}",
+                    technician=f"TECH_{random.randint(1001, 1050)}",
                     description=descriptions[maintenance_type],
                     cost=total_cost,
-                    parts_used=parts_used,
-                    maintenance_notes=f"Maintenance completed successfully for {device.device_id}",
+                    parts_replaced=parts_used,
                 )
 
                 maintenance_records.append(asdict(maintenance))
@@ -475,13 +541,54 @@ class IoTDataGenerator:
         failure_days: int = 30,
         maintenance_days: int = 90,
     ) -> Dict[str, List[Dict[str, Any]]]:
-        """Generate all types of data"""
-        return {
+        """Generate all types of data with coherence validation"""
+        data = {
+            "device_master": self.get_device_master_data(),
             "telemetry": self.generate_telemetry_data(telemetry_hours),
             "failures": self.generate_failure_events(failure_days),
             "maintenance": self.generate_maintenance_records(maintenance_days),
-            "device_master": self.get_device_master_data(),
         }
+
+        # Validate data coherence
+        self._validate_data_coherence(data)
+
+        return data
+
+    def _validate_data_coherence(self, data: Dict[str, List[Dict[str, Any]]]) -> None:
+        """Validate that generated data is coherent for joins"""
+        device_ids = set([d["device_id"] for d in data["device_master"]])
+
+        # Check telemetry data references valid devices
+        telemetry_device_ids = set([t["device_id"] for t in data["telemetry"]])
+        invalid_telemetry = telemetry_device_ids - device_ids
+        if invalid_telemetry:
+            print(
+                f"Warning: Telemetry data references {len(invalid_telemetry)} non-existent devices"
+            )
+
+        # Check failure data references valid devices
+        if data["failures"]:
+            failure_device_ids = set([f["device_id"] for f in data["failures"]])
+            invalid_failures = failure_device_ids - device_ids
+            if invalid_failures:
+                print(
+                    f"Warning: Failure data references {len(invalid_failures)} non-existent devices"
+                )
+
+        # Check maintenance data references valid devices
+        if data["maintenance"]:
+            maint_device_ids = set([m["device_id"] for m in data["maintenance"]])
+            invalid_maint = maint_device_ids - device_ids
+            if invalid_maint:
+                print(
+                    f"Warning: Maintenance data references {len(invalid_maint)} non-existent devices"
+                )
+
+        print(f"✅ Data coherence validated:")
+        print(f"  - {len(device_ids)} devices in master data")
+        print(f"  - {len(telemetry_device_ids)} devices with telemetry data")
+        print(f"  - {len(data['failures'])} failure events generated")
+        print(f"  - {len(data['maintenance'])} maintenance records generated")
 
     def save_data_to_json(
         self, data: Dict[str, List[Dict[str, Any]]], output_dir: str = "./output"
@@ -495,7 +602,7 @@ class IoTDataGenerator:
         for data_type, records in data.items():
             file_path = os.path.join(output_dir, f"{data_type}.json")
             with open(file_path, "w") as f:
-                json.dump(records, f, indent=2)
+                json.dump(records, f)
             file_paths[data_type] = file_path
             print(f"Saved {len(records)} {data_type} records to {file_path}")
 
@@ -538,21 +645,26 @@ def main():
     for data_type, path in file_paths.items():
         print(f"  {data_type}: {path}")
 
-    # Print device ID samples to verify consistency
-    print(f"\nSample Device IDs:")
+    # Print sample device IDs to verify consistency across datasets
+    print(f"\n📋 Device ID Consistency Check:")
     device_ids = [d["device_id"] for d in all_data["device_master"][:5]]
-    print(f"Device Master: {device_ids}")
+    print(f"  Device Master: {device_ids}")
 
     telemetry_ids = list(set([t["device_id"] for t in all_data["telemetry"][:20]]))[:5]
-    print(f"Telemetry: {telemetry_ids}")
+    print(f"  Telemetry: {telemetry_ids}")
 
     if all_data["failures"]:
         failure_ids = list(set([f["device_id"] for f in all_data["failures"]]))[:5]
-        print(f"Failures: {failure_ids}")
+        print(f"  Failures: {failure_ids}")
 
     if all_data["maintenance"]:
         maint_ids = list(set([m["device_id"] for m in all_data["maintenance"]]))[:5]
-        print(f"Maintenance: {maint_ids}")
+        print(f"  Maintenance: {maint_ids}")
+
+    print(f"\n✅ Data generation completed successfully!")
+    print(
+        f"💡 Run 'python validate_data_coherence.py {config.output_directory}' to validate coherence"
+    )
 
 
 if __name__ == "__main__":

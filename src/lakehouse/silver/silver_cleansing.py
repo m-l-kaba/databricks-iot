@@ -42,41 +42,62 @@ def telemetry_clean():
     Cleans and validates telemetry data with device enrichment.
     Applies data quality expectations and filters out invalid readings.
     """
-    telemetry = dlt.read_stream("bronze.telemetry_raw")
+    telemetry = spark.readStream.table("bronze.telemetry_raw")
 
-    # Get device master data - use read_stream to avoid circular dependency
-    device_master = dlt.read_stream("bronze.device_master_raw")
+    # Use read() for device master - it's reference data that changes infrequently
+    device_master = spark.read.table("bronze.device_master_raw")
 
     return (
         telemetry
-        # Convert timestamp string to proper timestamp
+        # Clean and convert timestamp string to proper timestamp
+        # Remove the extra ".000000" suffix from timestamps like "2025-10-16T16:32:31.590002.000000"
         .withColumn(
-            "timestamp", F.to_timestamp("timestamp", "yyyy-MM-dd'T'HH:mm:ss.SSSSSS")
+            "timestamp_clean",
+            F.regexp_replace(F.col("timestamp"), r"\.(\d{6})\.000000$", ".$1"),
         )
+        .withColumn(
+            "timestamp",
+            F.to_timestamp("timestamp_clean", "yyyy-MM-dd'T'HH:mm:ss.SSSSSS"),
+        )
+        .drop("timestamp_clean")  # Remove the temporary column
+        # Drop location and facility from telemetry since device master has authoritative data
+        .drop("location", "facility")
         # Join with device master for enrichment (using raw device master data)
         .join(
             device_master.select(
-                "device_id",
-                "device_type",
-                "location",
-                "facility",
-                "manufacturer",
-                "model",
-                "status",
-                # Convert timestamps on the fly for join
+                F.col("device_id").alias("dm_device_id"),
+                F.col("device_type").alias("device_type"),
+                F.col("location").alias("location"),
+                F.col("facility").alias("facility"),
+                F.col("manufacturer").alias("manufacturer"),
+                F.col("model").alias("model"),
+                F.col("status").alias("status"),
+                # Convert timestamps on the fly for join with cleaning
                 F.to_timestamp(
-                    "installation_date", "yyyy-MM-dd'T'HH:mm:ss.SSSSSS"
+                    F.regexp_replace(
+                        F.col("installation_date"), r"\.(\d{6})\.000000$", ".$1"
+                    ),
+                    "yyyy-MM-dd'T'HH:mm:ss.SSSSSS",
                 ).alias("installation_date"),
                 F.to_timestamp(
-                    "last_maintenance", "yyyy-MM-dd'T'HH:mm:ss.SSSSSS"
+                    F.regexp_replace(
+                        F.col("last_maintenance"), r"\.(\d{6})\.000000$", ".$1"
+                    ),
+                    "yyyy-MM-dd'T'HH:mm:ss.SSSSSS",
                 ).alias("last_maintenance"),
                 F.to_timestamp(
-                    "next_scheduled_maintenance", "yyyy-MM-dd'T'HH:mm:ss.SSSSSS"
+                    F.regexp_replace(
+                        F.col("next_scheduled_maintenance"),
+                        r"\.(\d{6})\.000000$",
+                        ".$1",
+                    ),
+                    "yyyy-MM-dd'T'HH:mm:ss.SSSSSS",
                 ).alias("next_scheduled_maintenance"),
             ),
-            "device_id",
+            F.col("device_id") == F.col("dm_device_id"),
             "inner",
         )
+        .drop("dm_device_id")  # Remove the aliased device_id column
         # Filter only active devices
         .filter(F.col("status").isin(["active", "maintenance"]))
         # Add time-based features
@@ -149,20 +170,33 @@ def device_master_clean():
     Cleans device master data with proper type conversions and derived fields.
     """
     return (
-        dlt.read_stream("bronze.device_master_raw")
-        # Convert string timestamps to proper timestamp types
+        spark.readStream.table("bronze.device_master_raw")
+        # Convert string timestamps to proper timestamp types with cleaning
         .withColumn(
             "installation_date",
-            F.to_timestamp("installation_date", "yyyy-MM-dd'T'HH:mm:ss.SSSSSS"),
+            F.to_timestamp(
+                F.regexp_replace(
+                    F.col("installation_date"), r"\.(\d{6})\.000000$", ".$1"
+                ),
+                "yyyy-MM-dd'T'HH:mm:ss.SSSSSS",
+            ),
         )
         .withColumn(
             "last_maintenance",
-            F.to_timestamp("last_maintenance", "yyyy-MM-dd'T'HH:mm:ss.SSSSSS"),
+            F.to_timestamp(
+                F.regexp_replace(
+                    F.col("last_maintenance"), r"\.(\d{6})\.000000$", ".$1"
+                ),
+                "yyyy-MM-dd'T'HH:mm:ss.SSSSSS",
+            ),
         )
         .withColumn(
             "next_scheduled_maintenance",
             F.to_timestamp(
-                "next_scheduled_maintenance", "yyyy-MM-dd'T'HH:mm:ss.SSSSSS"
+                F.regexp_replace(
+                    F.col("next_scheduled_maintenance"), r"\.(\d{6})\.000000$", ".$1"
+                ),
+                "yyyy-MM-dd'T'HH:mm:ss.SSSSSS",
             ),
         )
         # Add derived fields
@@ -229,15 +263,23 @@ def maintenance_clean():
     Cleans maintenance event data with proper type conversions.
     """
     return (
-        dlt.read_stream("bronze.maintenance_raw")
-        # Convert timestamps
+        spark.readStream.table("bronze.maintenance_raw")
+        # Convert timestamps with cleaning
         .withColumn(
             "maintenance_date",
-            F.to_timestamp("maintenance_date", "yyyy-MM-dd'T'HH:mm:ss.SSSSSS"),
+            F.to_timestamp(
+                F.regexp_replace(
+                    F.col("maintenance_date"), r"\.(\d{6})\.000000$", ".$1"
+                ),
+                "yyyy-MM-dd'T'HH:mm:ss.SSSSSS",
+            ),
         )
         .withColumn(
             "scheduled_date",
-            F.to_timestamp("scheduled_date", "yyyy-MM-dd'T'HH:mm:ss.SSSSSS"),
+            F.to_timestamp(
+                F.regexp_replace(F.col("scheduled_date"), r"\.(\d{6})\.000000$", ".$1"),
+                "yyyy-MM-dd'T'HH:mm:ss.SSSSSS",
+            ),
         )
         # Calculate derived fields
         .withColumn("duration_hours", F.col("duration_minutes") / 60.0)
@@ -292,15 +334,25 @@ def failures_clean():
     Cleans failure event data with severity scoring and downtime calculations.
     """
     return (
-        dlt.read_stream("bronze.failures_raw")
-        # Convert timestamps
+        spark.readStream.table("bronze.failures_raw")
+        # Convert timestamps with cleaning
         .withColumn(
             "failure_timestamp",
-            F.to_timestamp("failure_timestamp", "yyyy-MM-dd'T'HH:mm:ss.SSSSSS"),
+            F.to_timestamp(
+                F.regexp_replace(
+                    F.col("failure_timestamp"), r"\.(\d{6})\.000000$", ".$1"
+                ),
+                "yyyy-MM-dd'T'HH:mm:ss.SSSSSS",
+            ),
         )
         .withColumn(
             "repair_timestamp",
-            F.to_timestamp("repair_timestamp", "yyyy-MM-dd'T'HH:mm:ss.SSSSSS"),
+            F.to_timestamp(
+                F.regexp_replace(
+                    F.col("repair_timestamp"), r"\.(\d{6})\.000000$", ".$1"
+                ),
+                "yyyy-MM-dd'T'HH:mm:ss.SSSSSS",
+            ),
         )
         # Calculate downtime
         .withColumn(
@@ -359,7 +411,7 @@ def device_health_metrics():
     Used as input for anomaly detection and predictive features.
     Fully streaming-compatible approach using statistical thresholds.
     """
-    telemetry = dlt.read_stream("silver.telemetry_clean")
+    telemetry = spark.readStream.table("silver.telemetry_clean")
 
     return (
         telemetry
