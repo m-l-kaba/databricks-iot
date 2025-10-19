@@ -242,8 +242,10 @@ class IoTDataGenerator:
         telemetry_data = []
 
         # Use a coordinated timeline that enables predictive maintenance
-        # End telemetry data a few days ago to allow for future failure prediction
-        end_time = datetime.now() - timedelta(days=3)
+        # Generate historical telemetry data that aligns with failure prediction windows
+        end_time = datetime.now() - timedelta(
+            hours=1
+        )  # End 1 hour ago for better alignment
         start_time = end_time - timedelta(hours=hours)
         current_time = start_time
 
@@ -332,67 +334,55 @@ class IoTDataGenerator:
         mtbf_days = failure_config.get("mtbf_days", 90)
 
         # Calculate expected number of failures based on device count and time
-        # Only generate failures for devices that have been installed
-        expected_failures = max(1, int(self.num_devices * days / mtbf_days))
+        # Increase failure rate for better ML training data
+        expected_failures = max(
+            20, int(self.num_devices * days / mtbf_days * 2.5)
+        )  # 2.5x multiplier for more failures
 
         # Only generate failures for active devices (coherence check)
         active_devices = [
             d for d in self.devices if d.status in ["active", "maintenance"]
         ]
 
-        for _ in range(expected_failures):
+        # Generate failures with temporal distribution for better training
+        for i in range(expected_failures):
             if not active_devices:
                 break
 
             device = random.choice(active_devices)
 
-            # Ensure failure happens after device installation and last maintenance
-            device_install_date = datetime.fromisoformat(
-                device.installation_date.replace(".000000", "")
-            )
-            device_last_maintenance = datetime.fromisoformat(
-                device.last_maintenance.replace(".000000", "")
-            )
-
-            # Failure should be after installation and recent maintenance
-            earliest_failure_date = max(device_install_date, device_last_maintenance)
-
-            # For predictive maintenance, failures should occur after telemetry data
-            # Telemetry ends 3 days ago, so failures should be in the last 3 days
-            telemetry_end = datetime.now() - timedelta(days=3)
-
-            # Failure timestamp should be recent (within last 3 days) to enable prediction
-            max_days_recent = 3  # Failures in the last 3 days
+            # Distribute failures across the time period (not just last 3 days)
+            # This ensures we have historical failures for training
+            failure_days_back = random.randint(1, days)
             failure_time = datetime.now() - timedelta(
-                days=random.randint(0, max_days_recent),
+                days=failure_days_back,
                 hours=random.randint(0, 23),
                 minutes=random.randint(0, 59),
             )
 
-            # Generate severity with focus on major/critical for ML training
+            # Generate severity with better distribution for ML training
             severity = random.choices(
                 ["minor", "major", "critical"],
-                weights=[0.3, 0.5, 0.2],  # Focus on major/critical
+                weights=[0.4, 0.4, 0.2],  # More balanced distribution
             )[0]
 
             # Repair time based on severity
             if severity == "critical":
-                repair_hours = random.randint(4, 48)
+                repair_hours = random.randint(8, 72)
             elif severity == "major":
-                repair_hours = random.randint(2, 24)
+                repair_hours = random.randint(4, 36)
             else:
-                repair_hours = random.randint(1, 8)
+                repair_hours = random.randint(1, 12)
 
             repair_time = failure_time + timedelta(hours=repair_hours)
-            downtime_minutes = repair_hours * 60
 
             # Cost based on severity
             if severity == "critical":
-                cost = random.uniform(2000, 10000)
+                cost = random.uniform(3000, 15000)
             elif severity == "major":
-                cost = random.uniform(500, 3000)
+                cost = random.uniform(800, 5000)
             else:
-                cost = random.uniform(100, 800)
+                cost = random.uniform(100, 1200)
 
             # Map failure types to match expected schema
             failure_types = [
@@ -401,14 +391,24 @@ class IoTDataGenerator:
                 "power_failure",
                 "software_error",
                 "calibration_drift",
+                "communication_failure",
             ]
-            root_causes = ["wear", "overheating", "vibration", "corrosion", "fatigue"]
+            root_causes = [
+                "wear",
+                "overheating",
+                "vibration",
+                "corrosion",
+                "fatigue",
+                "age",
+                "environment",
+            ]
             repair_actions = [
                 "component_replacement",
                 "calibration_adjustment",
                 "software_update",
                 "cleaning_maintenance",
                 "connection_repair",
+                "full_overhaul",
             ]
 
             failure = FailureEvent(

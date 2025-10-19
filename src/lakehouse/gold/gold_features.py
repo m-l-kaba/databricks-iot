@@ -7,7 +7,7 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql import functions as F
 
 # COMMAND ----------
@@ -18,7 +18,7 @@ from pyspark.sql import functions as F
 # COMMAND ----------
 
 
-@dlt.table(
+@dp.table(
     name="gold.device_features_hourly",
     comment="Hourly aggregated features for predictive maintenance ML model",
     table_properties={
@@ -90,30 +90,38 @@ def device_features_hourly():
 # COMMAND ----------
 
 
-@dlt.table(
+@dp.table(
     name="gold.failure_labels",
-    comment="Failure labels for supervised learning with 7-day prediction window",
+    comment="Failure labels for supervised learning with extended prediction window",
     table_properties={"quality": "gold"},
 )
 def failure_labels():
     """
     Creates failure labels for supervised machine learning.
     Generates labels for devices that will fail within the next 7 days.
+    Now includes minor failures and more prediction points for better training data.
     """
     failures = spark.readStream.table("silver.failures_clean")
 
     return (
-        failures.filter(F.col("severity").isin(["major", "critical"]))
+        # Include all failure severities for more training data
+        failures.filter(F.col("severity").isin(["minor", "major", "critical"]))
         .select("device_id", "failure_timestamp", "failure_type", "severity")
-        # Create prediction points: 1, 3, and 7 days before failure
-        .withColumn("prediction_days", F.array(F.lit(1), F.lit(3), F.lit(7)))
-        .select("*", F.explode("prediction_days").alias("days_before_failure"))
+        # Create more prediction points: every 6 hours for the last 7 days
+        .withColumn(
+            "prediction_hours", F.array(*[F.lit(h) for h in range(6, 169, 6)])
+        )  # 6, 12, 18, ..., 168 hours
+        .select("*", F.explode("prediction_hours").alias("hours_before_failure"))
         .withColumn(
             "prediction_time",
             F.col("failure_timestamp")
-            - F.expr("INTERVAL 1 DAY") * F.col("days_before_failure"),
+            - F.expr("INTERVAL 1 HOUR") * F.col("hours_before_failure"),
         )
         .withColumn("prediction_hour", F.date_trunc("hour", "prediction_time"))
+        # Calculate days before failure for business logic
+        .withColumn(
+            "days_before_failure", F.round(F.col("hours_before_failure") / 24.0, 1)
+        )
         .select(
             "device_id",
             "prediction_hour",
@@ -121,6 +129,7 @@ def failure_labels():
             "failure_type",
             "severity",
             "days_before_failure",
+            "hours_before_failure",
         )
     )
 
@@ -128,10 +137,29 @@ def failure_labels():
 # COMMAND ----------
 
 
-@dlt.table(
+@dp.table(
     name="gold.predictive_maintenance_features",
     comment="Final ML dataset with features and labels for 7-day failure prediction",
     table_properties={"quality": "gold"},
+    schema=""""
+        device_id STRING,
+        hour_bucket TIMESTAMP,
+        device_type STRING,
+        location STRING,
+        avg_temperature DOUBLE,
+        avg_vibration DOUBLE,
+        avg_pressure DOUBLE,
+        avg_power DOUBLE,
+        high_temperature INT,
+        high_vibration INT,
+        needs_maintenance_soon INT,
+        health_score DOUBLE,
+        days_since_maintenance DOUBLE,
+        will_fail INT,
+        reading_count INT,
+        has_sufficient_data INT,
+        CONSTRAINT device_id_hour_pk PRIMARY KEY (device_id, hour_bucket)
+    """,
 )
 def predictive_maintenance_features():
     """
@@ -179,9 +207,12 @@ def predictive_maintenance_features():
             "needs_maintenance_soon",
             "health_score",
             "days_since_maintenance",
-            # Target variable
+            # Target variable and metadata
             "will_fail",
-            # Metadata
+            "failure_type",
+            "severity",
+            "days_before_failure",
+            # Data quality indicators
             "reading_count",
             "has_sufficient_data",
         )
@@ -191,7 +222,7 @@ def predictive_maintenance_features():
 # COMMAND ----------
 
 
-@dlt.table(
+@dp.table(
     name="gold.device_health_dashboard",
     comment="Device health dashboard for operational monitoring",
     table_properties={"quality": "gold"},
@@ -235,7 +266,7 @@ def device_health_dashboard():
 # COMMAND ----------
 
 
-@dlt.table(
+@dp.table(
     name="gold.maintenance_analytics",
     comment="Maintenance analytics for planning and cost optimization",
     table_properties={"quality": "gold"},

@@ -7,7 +7,7 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql import functions as F
 from pyspark.sql.types import *
 
@@ -92,7 +92,7 @@ failures_schema = StructType(
 # COMMAND ----------
 
 
-@dlt.table(
+@dp.table(
     name="bronze.telemetry_raw",
     comment="Raw IoT telemetry data from sensors",
     table_properties={
@@ -129,7 +129,7 @@ def telemetry_raw():
 # COMMAND ----------
 
 
-@dlt.table(
+@dp.table(
     name="bronze.device_master_raw",
     comment="Raw device master data with metadata and configuration",
     table_properties={"quality": "bronze", "pipelines.autoOptimize.managed": "true"},
@@ -160,7 +160,7 @@ def device_master_raw():
 # COMMAND ----------
 
 
-@dlt.table(
+@dp.table(
     name="bronze.maintenance_raw",
     comment="Raw maintenance events and schedules",
     table_properties={"quality": "bronze", "pipelines.autoOptimize.managed": "true"},
@@ -191,7 +191,7 @@ def maintenance_raw():
 # COMMAND ----------
 
 
-@dlt.table(
+@dp.table(
     name="bronze.failures_raw",
     comment="Raw failure events for model training",
     table_properties={"quality": "bronze", "pipelines.autoOptimize.managed": "true"},

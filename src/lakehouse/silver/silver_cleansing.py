@@ -7,7 +7,7 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql import functions as F
 from pyspark.sql.types import *
 
@@ -19,12 +19,12 @@ from pyspark.sql.types import *
 # COMMAND ----------
 
 
-@dlt.table(
+@dp.table(
     name="silver.telemetry_clean",
     comment="Cleaned telemetry data with quality checks and device enrichment",
     table_properties={"quality": "silver", "pipelines.autoOptimize.managed": "true"},
 )
-@dlt.expect_all(
+@dp.expect_all(
     {
         "valid_device_id": "device_id IS NOT NULL AND device_id != ''",
         "valid_timestamp": "timestamp IS NOT NULL",
@@ -150,12 +150,12 @@ def telemetry_clean():
 # COMMAND ----------
 
 
-@dlt.table(
+@dp.table(
     name="silver.device_master_clean",
     comment="Cleaned device master with proper data types and derived fields",
     table_properties={"quality": "silver"},
 )
-@dlt.expect_all(
+@dp.expect_all(
     {
         "valid_device_id": "device_id IS NOT NULL AND device_id != ''",
         "valid_device_type": "device_type IS NOT NULL",
@@ -245,12 +245,12 @@ def device_master_clean():
 # COMMAND ----------
 
 
-@dlt.table(
+@dp.table(
     name="silver.maintenance_clean",
     comment="Cleaned maintenance events with proper typing and duration calculations",
     table_properties={"quality": "silver"},
 )
-@dlt.expect_all(
+@dp.expect_all(
     {
         "valid_device_id": "device_id IS NOT NULL",
         "valid_maintenance_id": "maintenance_id IS NOT NULL",
@@ -316,12 +316,12 @@ def maintenance_clean():
 # COMMAND ----------
 
 
-@dlt.table(
+@dp.table(
     name="silver.failures_clean",
     comment="Cleaned failure events with severity scoring and downtime calculations",
     table_properties={"quality": "silver"},
 )
-@dlt.expect_all(
+@dp.expect_all(
     {
         "valid_device_id": "device_id IS NOT NULL",
         "valid_failure_id": "failure_id IS NOT NULL",
@@ -400,7 +400,7 @@ def failures_clean():
 # COMMAND ----------
 
 
-@dlt.table(
+@dp.table(
     name="silver.device_health_metrics",
     comment="Real-time device health indicators - streaming compatible without windowing",
     table_properties={"quality": "silver"},

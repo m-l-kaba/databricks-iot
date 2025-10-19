@@ -7,9 +7,9 @@ devices:
 
 # Data generation periods
 data_periods:
-  telemetry_hours: 24 # Hours of telemetry data to generate
-  failure_days: 30 # Days of failure events to generate
-  maintenance_days: 90 # Days of maintenance records to generate
+  telemetry_hours: 168 # 7 days of telemetry data (increased from 24)
+  failure_days: 90 # Increased from 30 to generate more failures
+  maintenance_days: 180 # Increased from 90
 
 # Telemetry settings
 telemetry:
@@ -142,7 +142,7 @@ simulation:
 # Failure simulation settings
 failures:
   # Average Mean Time Between Failures in days
-  mtbf_days: 90
+  mtbf_days: 45 # Reduced from 90 to generate more failures
 
   # Failure severity weights by failure type
   severity_weights:
