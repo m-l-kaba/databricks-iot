@@ -364,8 +364,8 @@ def scale_features(X_train, X_test, scaler_type="robust"):
     logger.info(f"Scaling {len(cols_to_scale)} numerical features")
     logger.debug(f"Features to scale: {list(cols_to_scale)}")
 
-    X_train_processed = X_train.copy()
-    X_test_processed = X_test.copy()
+    X_train_scaled = X_train.copy()
+    X_test_scaled = X_test.copy()
 
     # Fit scaler on training data and transform both sets
     if cols_to_scale:
