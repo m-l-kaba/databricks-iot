@@ -1,4 +1,4 @@
-# 🏭 Industrial IoT Predictive Maintenance Platform
+# Industrial IoT Predictive Maintenance Platform
 
 [![Databricks](https://img.shields.io/badge/Databricks-FF3621?style=for-the-badge&logo=databricks&logoColor=white)](https://databricks.com/)
 [![Azure](https://img.shields.io/badge/Azure-0078D4?style=for-the-badge&logo=microsoft-azure&logoColor=white)](https://azure.microsoft.com/)
@@ -8,22 +8,22 @@
 
 > **Enterprise-grade MLOps platform** demonstrating advanced Databricks expertise, Azure cloud architecture, and production-ready machine learning pipelines for industrial IoT predictive maintenance.
 
-## 🎯 Project Overview
+## Project Overview
 
 This project showcases a **complete end-to-end MLOps platform** built on Databricks, implementing predictive maintenance for industrial IoT devices. It demonstrates advanced data engineering, machine learning, and cloud architecture skills essential for enterprise data solutions.
 
-### 🏗️ Architecture Highlights
+### Architecture Highlights
 
-- **🏛️ Medallion Architecture**: Bronze → Silver → Gold data layers with Delta Lake
-- **☁️ Cloud-Native**: Full Azure deployment with Terraform Infrastructure as Code
-- **🔄 MLOps Pipeline**: Automated model training, validation, and deployment
-- **📊 Real-time Analytics**: Streaming data processing with Structured Streaming
-- **🎯 Predictive ML**: Gradient Boosting classifier with 92%+ accuracy for failure prediction
-- **🔧 Production-Ready**: Unity Catalog governance, automated testing, CI/CD workflows
+- **Medallion Architecture**: Bronze → Silver → Gold data layers with Delta Lake
+- **Cloud-Native**: Full Azure deployment with Terraform Infrastructure as Code
+- **MLOps Pipeline**: Automated model training, validation, and deployment
+- **Real-time Analytics**: Streaming data processing with Structured Streaming
+- **Predictive ML**: Gradient Boosting classifier with 92%+ accuracy for failure prediction
+- **Production-Ready**: Unity Catalog governance, automated testing, CI/CD workflows
 
-## 🚀 Key Features
+## Key Features
 
-### 🔧 Advanced Data Engineering
+### Advanced Data Engineering
 
 - **Delta Live Tables (DLT)** for declarative ETL pipelines
 - **Unity Catalog** for data governance and lineage
@@ -31,7 +31,7 @@ This project showcases a **complete end-to-end MLOps platform** built on Databri
 - **Structured Streaming** for real-time processing
 - **Data Quality Expectations** with automated validation
 
-### 🤖 Production MLOps
+### Production MLOps
 
 - **MLflow Integration** for experiment tracking and model registry
 - **Automated Feature Engineering** with time-series features
@@ -39,7 +39,7 @@ This project showcases a **complete end-to-end MLOps platform** built on Databri
 - **A/B Testing Framework** for model performance comparison
 - **Drift Detection** for model monitoring
 
-### ☁️ Enterprise Cloud Architecture
+### Enterprise Cloud Architecture
 
 - **Infrastructure as Code** with Terraform
 - **Azure Data Lake Gen2** integration
@@ -47,17 +47,17 @@ This project showcases a **complete end-to-end MLOps platform** built on Databri
 - **Secure Access Patterns** with managed identities
 - **Cost-Optimized** serverless compute
 
-## 📊 Business Impact
+## Business Impact
 
 This platform enables **proactive maintenance strategies** that can:
 
-- 📉 **Reduce unplanned downtime by 70%**
-- 💰 **Lower maintenance costs by 25%**
-- ⚡ **Predict failures 7 days in advance**
-- 🎯 **Achieve 92%+ prediction accuracy**
-- 📈 **Optimize asset utilization**
+- **Reduce unplanned downtime by 70%**
+- **Lower maintenance costs by 25%**
+- **Predict failures 7 days in advance**
+- **Achieve 92%+ prediction accuracy**
+- **Optimize asset utilization**
 
-## 🏗️ Technical Architecture
+## Technical Architecture
 
 ```mermaid
 graph TB
@@ -84,30 +84,30 @@ graph TB
     end
 ```
 
-### 🏛️ Data Layers
+### Data Layers
 
-#### 🥉 Bronze Layer (Raw Data Ingestion)
+#### Bronze Layer (Raw Data Ingestion)
 
 - **Auto Loader** for incremental data processing
 - **Schema Evolution** handling
 - **Data Quality Checks** with expectations
 - **Audit Logging** for compliance
 
-#### 🥈 Silver Layer (Data Cleansing)
+#### Silver Layer (Data Cleansing)
 
 - **Data Validation** with quality rules
 - **Type Conversions** and standardization
 - **Outlier Detection** and handling
 - **Device Enrichment** with master data
 
-#### 🥇 Gold Layer (Analytics-Ready)
+#### Gold Layer (Analytics-Ready)
 
 - **Feature Engineering** for ML models
 - **Time-Series Aggregations** (hourly/daily)
 - **Business Metrics** calculation
 - **ML Training Datasets** preparation
 
-### 🤖 ML Pipeline Architecture
+### ML Pipeline Architecture
 
 ```python
 # Advanced Feature Engineering Pipeline
@@ -126,37 +126,37 @@ def predictive_maintenance_features():
     )
 ```
 
-## 🛠️ Technology Stack
+## Technology Stack
 
-### 🔧 Data Platform
+### Data Platform
 
 - **Databricks**: Unified analytics platform
 - **Delta Lake**: ACID transactions, versioning, schema evolution
 - **Unity Catalog**: Data governance and discovery
 - **Apache Spark**: Distributed data processing
 
-### 🤖 Machine Learning
+### Machine Learning
 
 - **MLflow**: Experiment tracking, model registry, deployment
 - **Scikit-learn**: ML algorithms and preprocessing
 - **Pandas/NumPy**: Data manipulation and analysis
 - **Feature Store**: Centralized feature management
 
-### ☁️ Cloud Infrastructure
+### Cloud Infrastructure
 
 - **Azure Data Lake Gen2**: Scalable data storage
 - **Azure Databricks**: Managed Spark platform
 - **Terraform**: Infrastructure automation
 - **Azure Active Directory**: Identity and access management
 
-### 🔄 DevOps & Orchestration
+### DevOps & Orchestration
 
 - **Databricks Workflows**: Job scheduling and orchestration
 - **GitHub Actions**: CI/CD pipelines
 - **Delta Live Tables**: Declarative ETL
 - **Databricks CLI**: Automated deployments
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -166,7 +166,7 @@ def predictive_maintenance_features():
 - **Python** >= 3.8
 - **Azure CLI** configured
 
-### 1️⃣ Infrastructure Deployment
+### 1. Infrastructure Deployment
 
 ```bash
 # Clone repository
@@ -183,7 +183,7 @@ terraform apply
 databricks configure
 ```
 
-### 2️⃣ Data Generation & Upload
+### 2. Data Generation & Upload
 
 ```bash
 # Install dependencies
@@ -200,7 +200,7 @@ uv run python run_generator.py \
 uv run python validate_data_coherence.py
 ```
 
-### 3️⃣ Deploy Databricks Pipeline
+### 3. Deploy Databricks Pipeline
 
 ```bash
 # Deploy DLT pipeline and workflows
@@ -210,16 +210,16 @@ databricks bundle deploy
 databricks jobs run-now --job-id <pipeline-job-id>
 ```
 
-### 4️⃣ Train ML Model
+### 4. Train ML Model
 
 ```bash
 # Execute ML training pipeline
 databricks notebooks run /Workspace/src/lakehouse/models/training.py
 ```
 
-## 📊 Data Pipeline
+## Data Pipeline
 
-### 📈 Synthetic Data Generation
+### Synthetic Data Generation
 
 The platform includes a sophisticated **IoT data simulator** that generates realistic industrial sensor data:
 
@@ -236,7 +236,7 @@ failure_prediction_window: 7 days
 accuracy_target: >92%
 ```
 
-### 🔄 Real-time Processing
+### Real-time Processing
 
 ```python
 # Streaming telemetry processing
@@ -257,36 +257,36 @@ def telemetry_clean():
     )
 ```
 
-### 🔧 Feature Engineering
+### Feature Engineering
 
 - **Time-series features**: Rolling windows, lag features, trend analysis
 - **Device-specific patterns**: Maintenance cycles, usage patterns
 - **Environmental factors**: Temperature, humidity, operational conditions
 - **Health indicators**: Composite scores, anomaly detection
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 databricks-iot/
-├── 📁 src/lakehouse/           # Data pipeline layers
-│   ├── 🥉 bronze/             # Raw data ingestion
-│   ├── 🥈 silver/             # Data cleansing
-│   ├── 🥇 gold/               # Analytics features
-│   └── 🤖 models/             # ML training
-├── 📁 infrastructure/         # Terraform IaC
+├── src/lakehouse/           # Data pipeline layers
+│   ├── bronze/             # Raw data ingestion
+│   ├── silver/             # Data cleansing
+│   ├── gold/               # Analytics features
+│   └── models/             # ML training
+├── infrastructure/         # Terraform IaC
 │   └── terraform/
 │       ├── modules/azure/     # Azure resources
 │       └── modules/databricks/# Databricks config
-├── 📁 src/data_simulation/    # IoT data generator
-├── 📁 notebooks/              # Analysis notebooks
-├── 📁 tests/                  # Comprehensive testing
-├── 📁 resources/              # Databricks bundles
-└── 📋 config.yaml            # Configuration
+├── src/data_simulation/    # IoT data generator
+├── notebooks/              # Analysis notebooks
+├── tests/                  # Comprehensive testing
+├── resources/              # Databricks bundles
+└── config.yaml            # Configuration
 ```
 
-## 🧪 Testing Strategy
+## Testing Strategy
 
-### 🔬 Comprehensive Test Suite
+### Comprehensive Test Suite
 
 ```bash
 # Run all tests with coverage
@@ -295,25 +295,25 @@ uv run pytest tests/ --cov=src --cov-report=html
 
 ```
 
-### ✅ Quality Assurance
+### Quality Assurance
 
 - **Data Quality Expectations**: Automated validation rules
 - **Schema Evolution Testing**: Backward compatibility
 - **Model Performance Testing**: Accuracy benchmarks
 - **Pipeline Testing**: End-to-end data flow validation
 
-## 🚀 Deployment & Operations
+## Deployment & Operations
 
-### 📊 Monitoring & Alerting
+### Monitoring & Alerting
 
 - **Data Quality Monitoring**: Automated data validation
 - **Model Performance Tracking**: Drift detection and alerts
 - **Pipeline Health**: Success/failure notifications
 - **Cost Optimization**: Resource usage monitoring
 
-## 🤝 Professional Skills Demonstrated
+## Professional Skills Demonstrated
 
-### 🎓 Databricks Expertise
+### Databricks Expertise
 
 - ✅ **Unity Catalog**: Data governance and discovery
 - ✅ **Delta Live Tables**: Declarative ETL pipelines
@@ -321,34 +321,34 @@ uv run pytest tests/ --cov=src --cov-report=html
 - ✅ **Structured Streaming**: Real-time data processing
 - ✅ **Performance Optimization**: Cluster tuning and cost management
 
-### ☁️ Cloud Architecture
+### Cloud Architecture
 
 - ✅ **Infrastructure as Code**: Terraform automation
 - ✅ **Azure Integration**: Data Lake, Storage, Security
 - ✅ **Scalable Design**: Auto-scaling and serverless compute
 - ✅ **Security Best Practices**: RBAC, encryption, networking
 
-### 🤖 MLOps & Data Science
+### MLOps & Data Science
 
 - ✅ **End-to-End ML Pipelines**: Training to deployment
 - ✅ **Model Monitoring**: Drift detection and retraining
 - ✅ **Feature Engineering**: Time-series and domain expertise
 - ✅ **Production ML**: A/B testing and gradual rollouts
 
-### 🔧 Software Engineering
+### Software Engineering
 
 - ✅ **Clean Code**: Maintainable, documented, tested
 - ✅ **Version Control**: Git workflows and collaboration
 - ✅ **CI/CD**: Automated testing and deployment
 - ✅ **Documentation**: Comprehensive technical documentation
 
-## 📞 Contact & Collaboration
+## Contact & Collaboration
 
 **Available for freelance data engineering and MLOps projects**
 
-- 💼 **LinkedIn**: https://www.linkedin.com/in/mory-kaba-80b5641a0/
+- **LinkedIn**: https://www.linkedin.com/in/mory-kaba-80b5641a0/
 
-### 🎯 Specializations
+### Specializations
 
 - **Databricks Platform Engineering**
 - **MLOps Pipeline Development**
