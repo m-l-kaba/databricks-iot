@@ -18,6 +18,7 @@ from sklearn.metrics import (
 from sklearn.utils.class_weight import compute_class_weight
 import mlflow
 import mlflow.sklearn
+from mlflow.models import infer_signature
 from datetime import datetime
 import warnings
 import logging
@@ -525,9 +526,11 @@ def train_gradient_boosting_model(
             logger.info(f"  {row['feature']}: {row['importance']:.4f}")
 
         # Log model
+        signature = infer_signature(X_test, y_test_pred)
         mlflow.sklearn.log_model(
             sk_model=best_model,
             registered_model_name="production.gold.predictive_maintenance_gb",
+            signature=signature,
         )
         # Log results
         logger.info("=== Model Performance ===")
