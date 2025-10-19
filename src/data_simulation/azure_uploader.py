@@ -1,6 +1,4 @@
-"""
-Azure Data Lake uploader for IoT data
-"""
+"""Azure Data Lake uploader for IoT data"""
 
 import json
 import os
@@ -28,8 +26,7 @@ class AzureDataLakeUploader:
         container_name: str = "raw",
         storage_account_key: Optional[str] = None,
     ):
-        """
-        Initialize Azure Data Lake uploader
+        """Initialize Azure Data Lake uploader.
 
         Args:
             storage_account_name: Name of the Azure storage account
@@ -44,7 +41,6 @@ class AzureDataLakeUploader:
         self.storage_account_name = storage_account_name
         self.container_name = container_name
 
-        # Create service client
         if storage_account_key:
             account_url = f"https://{storage_account_name}.dfs.core.windows.net"
             self.service_client = DataLakeServiceClient(

@@ -1,6 +1,4 @@
-"""
-Configuration settings for IoT Data Generator
-"""
+"""Configuration settings for IoT Data Generator"""
 
 import yaml
 from pathlib import Path
@@ -8,9 +6,8 @@ from typing import Dict, Any
 
 
 def load_config(config_path: str = None) -> Dict[str, Any]:
-    """Load configuration from YAML config file"""
+    """Load configuration from YAML config file."""
     if config_path is None:
-        # Look for config.yaml in the project root
         current_dir = Path(__file__).parent
         config_path = current_dir.parent.parent / "config.yaml"
 
@@ -23,5 +20,4 @@ def load_config(config_path: str = None) -> Dict[str, Any]:
     return config_data
 
 
-# Load the default configuration
 CONFIG = load_config()

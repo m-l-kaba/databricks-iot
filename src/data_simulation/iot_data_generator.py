@@ -1,14 +1,10 @@
-"""
-IoT Data Generator for Databricks IoT Project
+"""IoT Data Generator for Databricks IoT Project
 
-This module generates synthetic IoT data for four categories:
+Generates synthetic IoT data for four categories:
 - telemetry: Real-time sensor data from IoT devices
 - failures: Device failure and error events
 - maintenance: Scheduled and unscheduled maintenance records
 - device_master: Device metadata and configuration data
-
-The generated data is designed to work with Azure Data Lake Gen2 storage
-and Databricks analytics workflows.
 """
 
 import json
@@ -249,16 +245,13 @@ class IoTDataGenerator:
         start_time = end_time - timedelta(hours=hours)
         current_time = start_time
 
-        # Only generate data for active devices
         active_devices = [d for d in self.devices if d.status == "active"]
 
         while current_time <= end_time:
             for device in active_devices:
-                # Get data quality configuration
                 quality_config = self.config.get("data_quality", {})
                 missing_prob = quality_config.get("missing_reading_probability", 0.05)
 
-                # Some devices might miss readings (simulate network issues)
                 if random.random() > (1 - missing_prob):
                     continue
 
@@ -300,13 +293,11 @@ class IoTDataGenerator:
                 motor_speed = motor_speed_base + random.gauss(0, 200)
                 motor_speed = max(1000, min(3000, motor_speed))
 
-                # Add missing valve_position field expected by bronze schema
-                valve_position = random.uniform(0, 100)  # 0-100% open
+                valve_position = random.uniform(0, 100)
 
                 reading = TelemetryReading(
                     device_id=device.device_id,
-                    timestamp=current_time.isoformat()
-                    + ".000000",  # Match expected format
+                    timestamp=current_time.isoformat() + ".000000",
                     temperature=round(temperature, 2),
                     pressure=round(pressure, 2),
                     vibration=round(vibration, 2),

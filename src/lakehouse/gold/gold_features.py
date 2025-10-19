@@ -1,21 +1,7 @@
 # Databricks notebook source
-# MAGIC %md
-# MAGIC # Gold Layer - ML Features and Analytics
-# MAGIC
-# MAGIC This notebook contains the gold layer tables for the IoT predictive maintenance pipeline.
-# MAGIC It creates ML-ready features, training datasets, and business intelligence views.
-
-# COMMAND ----------
 
 from pyspark import pipelines as dp
 from pyspark.sql import functions as F
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Gold Tables - ML Features and Business Intelligence
-
-# COMMAND ----------
 
 
 @dp.table(
@@ -27,27 +13,20 @@ from pyspark.sql import functions as F
     },
 )
 def device_features_hourly():
-    """
-    Creates hourly aggregated features for machine learning.
-    This table serves as the primary feature store for predictive maintenance models.
-    """
+    """Creates hourly aggregated features for machine learning."""
     health_metrics = spark.readStream.table("silver.device_health_metrics")
 
     return (
         health_metrics.withColumn("hour_bucket", F.date_trunc("hour", "timestamp"))
         .groupBy("device_id", "hour_bucket", "device_type", "location")
         .agg(
-            # Basic sensor aggregations (main features)
             F.avg("temperature").alias("avg_temperature"),
             F.avg("vibration").alias("avg_vibration"),
             F.avg("pressure").alias("avg_pressure"),
             F.avg("power_consumption").alias("avg_power"),
-            # Data quality metrics
             F.count("*").alias("reading_count"),
-            # Maintenance timing features
             F.first("days_since_last_maintenance").alias("days_since_maintenance"),
         )
-        # Feature engineering - core anomaly detection and health scoring
         .withColumn(
             "high_temperature", F.when(F.col("avg_temperature") > 75, 1).otherwise(0)
         )
@@ -96,21 +75,13 @@ def device_features_hourly():
     table_properties={"quality": "gold"},
 )
 def failure_labels():
-    """
-    Creates failure labels for supervised machine learning.
-    Generates labels for devices that will fail within the next 7 days.
-    Now includes minor failures and more prediction points for better training data.
-    """
+    """Creates failure labels for supervised ML - devices that will fail within 7 days."""
     failures = spark.readStream.table("silver.failures_clean")
 
     return (
-        # Include all failure severities for more training data
         failures.filter(F.col("severity").isin(["minor", "major", "critical"]))
         .select("device_id", "failure_timestamp", "failure_type", "severity")
-        # Create more prediction points: every 6 hours for the last 7 days
-        .withColumn(
-            "prediction_hours", F.array(*[F.lit(h) for h in range(6, 169, 6)])
-        )  # 6, 12, 18, ..., 168 hours
+        .withColumn("prediction_hours", F.array(*[F.lit(h) for h in range(6, 169, 6)]))
         .select("*", F.explode("prediction_hours").alias("hours_before_failure"))
         .withColumn(
             "prediction_time",
@@ -118,7 +89,6 @@ def failure_labels():
             - F.expr("INTERVAL 1 HOUR") * F.col("hours_before_failure"),
         )
         .withColumn("prediction_hour", F.date_trunc("hour", "prediction_time"))
-        # Calculate days before failure for business logic
         .withColumn(
             "days_before_failure", F.round(F.col("hours_before_failure") / 24.0, 1)
         )
@@ -141,7 +111,7 @@ def failure_labels():
     name="gold.predictive_maintenance_features",
     comment="Final ML dataset with features and labels for 7-day failure prediction",
     table_properties={"quality": "gold"},
-    schema=""""
+    schema="""
         device_id STRING,
         hour_bucket TIMESTAMP,
         device_type STRING,
@@ -154,9 +124,12 @@ def failure_labels():
         high_vibration INT,
         needs_maintenance_soon INT,
         health_score DOUBLE,
-        days_since_maintenance DOUBLE,
+        days_since_maintenance INT,
         will_fail INT,
-        reading_count INT,
+        failure_type STRING,
+        severity STRING,
+        days_before_failure DOUBLE,
+        reading_count LONG,
         has_sufficient_data INT,
         CONSTRAINT device_id_hour_pk PRIMARY KEY (device_id, hour_bucket)
     """,

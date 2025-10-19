@@ -1,22 +1,8 @@
 # Databricks notebook source
-# MAGIC %md
-# MAGIC # Silver Layer - Data Cleansing and Validation
-# MAGIC
-# MAGIC This notebook contains the silver layer tables for the IoT predictive maintenance pipeline.
-# MAGIC It cleanses and validates raw data with quality expectations and type conversions.
-
-# COMMAND ----------
 
 from pyspark import pipelines as dp
 from pyspark.sql import functions as F
 from pyspark.sql.types import *
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Silver Tables - Cleaned and Validated Data
-
-# COMMAND ----------
 
 
 @dp.table(
@@ -38,13 +24,8 @@ from pyspark.sql.types import *
     }
 )
 def telemetry_clean():
-    """
-    Cleans and validates telemetry data with device enrichment.
-    Applies data quality expectations and filters out invalid readings.
-    """
+    """Cleans and validates telemetry data with device enrichment."""
     telemetry = spark.readStream.table("bronze.telemetry_raw")
-
-    # Use read() for device master - it's reference data that changes infrequently
     device_master = spark.read.table("bronze.device_master_raw")
 
     return (

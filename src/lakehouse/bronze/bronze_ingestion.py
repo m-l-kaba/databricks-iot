@@ -1,24 +1,9 @@
 # Databricks notebook source
-# MAGIC %md
-# MAGIC # Bronze Layer - Raw Data Ingestion
-# MAGIC
-# MAGIC This notebook contains the bronze layer tables for the IoT predictive maintenance pipeline.
-# MAGIC It ingests raw data from various sources using Auto Loader with proper schemas.
-
-# COMMAND ----------
 
 from pyspark import pipelines as dp
 from pyspark.sql import functions as F
 from pyspark.sql.types import *
 
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Schema Definitions
-
-# COMMAND ----------
-
-# Device master schema
 device_master_schema = StructType(
     [
         StructField("device_id", StringType(), False),
@@ -35,7 +20,6 @@ device_master_schema = StructType(
     ]
 )
 
-# Telemetry data schema
 telemetry_schema = StructType(
     [
         StructField("device_id", StringType(), False),

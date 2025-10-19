@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
-"""
-CLI script for running the IoT Data Generator
-"""
+"""CLI script for running the IoT Data Generator"""
 
 import argparse
 import os
 import sys
 from pathlib import Path
 
-# Add src to path so we can import our modules
 src_path = Path(__file__).parent / "src"
 sys.path.insert(0, str(src_path))
 
@@ -19,7 +16,6 @@ from data_simulation.azure_uploader import upload_iot_data_to_azure
 def main():
     parser = argparse.ArgumentParser(description="Generate synthetic IoT data")
 
-    # Data generation parameters
     parser.add_argument(
         "--devices",
         type=int,

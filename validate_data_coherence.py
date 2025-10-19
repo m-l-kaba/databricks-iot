@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Data Coherence Validation Script
+"""Data Coherence Validation Script
 
 Tests that generated IoT data can be properly joined and matches pipeline expectations.
 """
@@ -12,12 +11,11 @@ from collections import defaultdict
 
 
 def validate_data_coherence(output_dir="./output"):
-    """Validate that generated data is coherent for pipeline joins"""
+    """Validate that generated data is coherent for pipeline joins."""
 
     print("🔍 Validating Data Coherence...")
     print("=" * 50)
 
-    # Load all datasets
     try:
         with open(f"{output_dir}/device_master.json") as f:
             devices = json.load(f)
@@ -31,7 +29,6 @@ def validate_data_coherence(output_dir="./output"):
         print(f"❌ Error loading data files: {e}")
         return False
 
-    # Extract device IDs
     device_ids = set([d["device_id"] for d in devices])
     telemetry_ids = set([t["device_id"] for t in telemetry])
     failure_ids = set([f["device_id"] for f in failures]) if failures else set()
@@ -43,7 +40,6 @@ def validate_data_coherence(output_dir="./output"):
     print(f"  Failures: {len(failures)} events from {len(failure_ids)} devices")
     print(f"  Maintenance: {len(maintenance)} records from {len(maint_ids)} devices")
 
-    # Validation 1: All telemetry references valid devices
     orphan_telemetry = telemetry_ids - device_ids
     if orphan_telemetry:
         print(f"❌ Orphan telemetry devices: {orphan_telemetry}")
