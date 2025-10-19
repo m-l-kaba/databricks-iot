@@ -1,8 +1,8 @@
 # The main pipeline for databricks_predictive_maintenance
 resources:
   pipelines:
-    databricks_predictive_maintenance_pipeline:
-      name: databricks_predictive_maintenance_pipeline
+    lakehouse_pipeline:
+      name: lakehouse_pipeline
       ## Catalog is required for serverless compute
       catalog: production
       schema: raw
