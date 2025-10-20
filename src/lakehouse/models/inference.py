@@ -1,6 +1,7 @@
 """Inference module for predictive maintenance model."""
 
 from mlflow.tracking import MlflowClient
+import mlflow
 import pyspark.sql.functions as F
 import pandas as pd
 import numpy as np
@@ -35,9 +36,13 @@ def main():
     ][0]
 
     model_name = "predictive_maintenance_pipeline"
-    input_data = spark.read.table(
-        "production.gold.predictive_maintenance_features"
-    ).filter(F.col("hour_bucket") > F.to_timestamp(F.lit(latest_training_hour_bucket)))
+    input_data = (
+        spark.read.table("production.gold.predictive_maintenance_features")
+        .filter(
+            F.col("hour_bucket") > F.to_timestamp(F.lit(latest_training_hour_bucket))
+        )
+        .drop("will_fail")
+    )
 
     input_data_pd = input_data.toPandas()
 
