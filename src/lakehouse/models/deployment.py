@@ -35,3 +35,7 @@ def main():
         "Champion",
         model_version_challenger.version,
     )
+
+
+if __name__ == "__main__":
+    main()
