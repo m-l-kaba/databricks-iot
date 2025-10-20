@@ -44,5 +44,5 @@ jobs:
           ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
           ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
         run: |
-          databricks bundle deploy --target production
+          databricks bundle deploy --target prod
           echo "Successfully deployed to production environment"
