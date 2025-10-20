@@ -6,193 +6,114 @@
 [![MLflow](https://img.shields.io/badge/MLflow-0194E2?style=for-the-badge&logo=mlflow&logoColor=white)](https://mlflow.org/)
 [![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org/)
 
-> **Enterprise-grade MLOps platform** demonstrating advanced Databricks expertise, Azure cloud architecture, and production-ready machine learning pipelines for industrial IoT predictive maintenance.
+> **End-to-end MLOps platform** demonstrating production-ready machine learning pipelines on Databricks with Unity Catalog, automated deployment workflows, and comprehensive data engineering practices for industrial IoT predictive maintenance.
 
 ## Project Overview
 
-This project showcases a **complete end-to-end MLOps platform** built on Databricks, implementing predictive maintenance for industrial IoT devices. It demonstrates advanced data engineering, machine learning, and cloud architecture skills essential for enterprise data solutions.
+This project showcases a **complete MLOps platform** built on Databricks, implementing predictive maintenance for industrial IoT devices. It demonstrates data engineering, machine learning, and MLOps best practices with automated CI/CD deployment.
 
-### Architecture Highlights
+### Key Capabilities
 
 - **Medallion Architecture**: Bronze → Silver → Gold data layers with Delta Lake
-- **Cloud-Native**: Full Azure deployment with Terraform Infrastructure as Code
-- **MLOps Pipeline**: Automated model training, validation, and deployment
-- **Real-time Analytics**: Streaming data processing with Structured Streaming
-- **Predictive ML**: Gradient Boosting classifier with 92%+ accuracy for failure prediction
-- **Production-Ready**: Unity Catalog governance, automated testing, CI/CD workflows
-
-## Key Features
-
-### Advanced Data Engineering
-
-- **Delta Live Tables (DLT)** for declarative ETL pipelines
-- **Unity Catalog** for data governance and lineage
-- **Auto Loader** for scalable file ingestion
-- **Structured Streaming** for real-time processing
-- **Data Quality Expectations** with automated validation
-
-### Production MLOps
-
-- **MLflow Integration** for experiment tracking and model registry
-- **Automated Feature Engineering** with time-series features
-- **Model Validation Pipeline** with comprehensive metrics
-- **A/B Testing Framework** for model performance comparison
-- **Drift Detection** for model monitoring
-
-### Enterprise Cloud Architecture
-
-- **Infrastructure as Code** with Terraform
-- **Azure Data Lake Gen2** integration
-- **Databricks Workflows** for orchestration
-- **Secure Access Patterns** with managed identities
-- **Cost-Optimized** serverless compute
-
-## Business Impact
-
-This platform enables **proactive maintenance strategies** that can:
-
-- **Reduce unplanned downtime by 70%**
-- **Lower maintenance costs by 25%**
-- **Predict failures 7 days in advance**
-- **Achieve 92%+ prediction accuracy**
-- **Optimize asset utilization**
+- **Delta Live Tables**: Serverless declarative ETL pipelines
+- **Unity Catalog**: Model registry with Challenger/Champion alias-based deployment
+- **MLOps Automation**: Complete training, deployment, and inference pipelines
+- **Synthetic Data Generation**: Realistic IoT device simulator with configurable failure patterns
+- **CI/CD Integration**: GitHub Actions workflow for automated bundle deployment
 
 ## Technical Architecture
 
-```mermaid
-graph TB
-    A[IoT Devices] --> B[Azure Data Lake Gen2]
-    B --> C[Bronze Layer - Raw Data]
-    C --> D[Silver Layer - Cleansed Data]
-    D --> E[Gold Layer - ML Features]
-    E --> F[ML Training Pipeline]
-    F --> G[MLflow Model Registry]
-    G --> H[Production Serving]
-    H --> I[Monitoring & Alerting]
+### Data Pipeline (Medallion Architecture)
 
-    subgraph "Databricks Lakehouse"
-        C
-        D
-        E
-        F
-    end
-
-    subgraph "MLOps Platform"
-        G
-        H
-        I
-    end
+```
+Azure Data Lake Gen2 (Raw Data)
+    ↓
+Bronze Layer: Raw ingestion with Auto Loader
+    ↓
+Silver Layer: Data cleansing and validation
+    ↓
+Gold Layer: Feature engineering for ML
+    ↓
+ML Pipeline: Training → Deployment → Inference
 ```
 
-### Data Layers
+### MLOps Workflow
 
-#### Bronze Layer (Raw Data Ingestion)
+```
+1. Training Pipeline (training.py)
+   - Loads gold features
+   - Trains Gradient Boosting pipeline with custom preprocessing
+   - Logs model to Unity Catalog with Challenger alias
+   - Tracks training cutoff timestamp for inference filtering
 
-- **Auto Loader** for incremental data processing
-- **Schema Evolution** handling
-- **Data Quality Checks** with expectations
-- **Audit Logging** for compliance
+2. Deployment Pipeline (deployment.py)
+   - Retrieves Challenger model
+   - Promotes current Champion to Retired
+   - Promotes Challenger to Champion
 
-#### Silver Layer (Data Cleansing)
-
-- **Data Validation** with quality rules
-- **Type Conversions** and standardization
-- **Outlier Detection** and handling
-- **Device Enrichment** with master data
-
-#### Gold Layer (Analytics-Ready)
-
-- **Feature Engineering** for ML models
-- **Time-Series Aggregations** (hourly/daily)
-- **Business Metrics** calculation
-- **ML Training Datasets** preparation
-
-### ML Pipeline Architecture
-
-```python
-# Advanced Feature Engineering Pipeline
-@dp.table(name="gold.predictive_maintenance_features")
-def predictive_maintenance_features():
-    """ML-ready features with sophisticated time-series engineering"""
-    return (
-        features.join(labels, on=["device_id", "hour_bucket"], how="left")
-        .fillna({"will_fail": 0})
-        .withColumn("has_sufficient_data",
-                   F.when(F.col("reading_count") >= 10, 1).otherwise(0))
-        .withColumn("health_score",
-                   100 - (F.col("high_temperature") * 30 +
-                         F.col("high_vibration") * 40 +
-                         F.col("needs_maintenance_soon") * 30))
-    )
+3. Inference Pipeline (inference.py)
+   - Loads Champion model from Unity Catalog
+   - Filters new data based on training cutoff
+   - Generates predictions
+   - Saves to gold.predictive_maintenance_predictions
 ```
 
 ## Technology Stack
 
-### Data Platform
+### Core Platform
 
-- **Databricks**: Unified analytics platform
-- **Delta Lake**: ACID transactions, versioning, schema evolution
-- **Unity Catalog**: Data governance and discovery
-- **Apache Spark**: Distributed data processing
+- **Databricks**: Unified analytics platform with serverless compute
+- **Delta Lake**: ACID transactions, time travel, schema evolution
+- **Unity Catalog**: Centralized governance, model registry with aliases
+- **Delta Live Tables**: Declarative ETL with data quality expectations
 
 ### Machine Learning
 
-- **MLflow**: Experiment tracking, model registry, deployment
-- **Scikit-learn**: ML algorithms and preprocessing
-- **Pandas/NumPy**: Data manipulation and analysis
-- **Feature Store**: Centralized feature management
+- **MLflow**: Experiment tracking, model registry with Unity Catalog integration
+- **Scikit-learn**: Gradient Boosting with custom preprocessing pipeline
+- **Python 3.13**: Modern type hints (PEP 685, PEP 604, PEP 673)
+- **Feature Engineering**: Time-series aggregations, rolling windows, maintenance patterns
 
-### Cloud Infrastructure
+### Infrastructure & DevOps
 
-- **Azure Data Lake Gen2**: Scalable data storage
-- **Azure Databricks**: Managed Spark platform
-- **Terraform**: Infrastructure automation
-- **Azure Active Directory**: Identity and access management
-
-### DevOps & Orchestration
-
-- **Databricks Workflows**: Job scheduling and orchestration
-- **GitHub Actions**: CI/CD pipelines
-- **Delta Live Tables**: Declarative ETL
-- **Databricks CLI**: Automated deployments
+- **Azure Data Lake Gen2**: Scalable cloud storage
+- **Terraform**: Infrastructure as Code for Azure resources
+- **GitHub Actions**: CI/CD with automated testing and deployment
+- **Databricks CLI**: Bundle-based deployments
+- **uv**: Fast Python package management
 
 ## Quick Start
 
 ### Prerequisites
 
-- **Azure Subscription** with contributor access
-- **Databricks Workspace** provisioned
-- **Terraform** >= 1.0
-- **Python** >= 3.8
+- **Azure Subscription** with Databricks workspace
+- **Python 3.13** or higher
+- **uv** package manager
 - **Azure CLI** configured
+- **Databricks CLI** installed
 
-### 1. Infrastructure Deployment
+### 1. Install Dependencies
 
 ```bash
-# Clone repository
-git clone https://github.com/your-username/databricks-iot.git
-cd databricks-iot
+# Install uv if not already installed
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Deploy Azure infrastructure
-cd infrastructure/terraform
-terraform init
-terraform plan
-terraform apply
-
-# Configure Databricks
-databricks configure
+# Install project dependencies
+uv sync
 ```
 
-### 2. Data Generation & Upload
+### 2. Generate Synthetic Data
 
 ```bash
-# Install dependencies
-uv sync
+# Generate 100 devices with 7 days of telemetry
+make generate_data
 
-# Generate synthetic IoT data
+# Or run directly with custom parameters
 uv run python run_generator.py \
   --devices 100 \
   --telemetry-hours 168 \
+  --failure-days 90 \
+  --maintenance-days 180 \
   --upload-to-azure \
   --storage-account databricksiotsa
 
@@ -200,160 +121,253 @@ uv run python run_generator.py \
 uv run python validate_data_coherence.py
 ```
 
-### 3. Deploy Databricks Pipeline
+### 3. Deploy Infrastructure (Optional)
 
 ```bash
-# Deploy DLT pipeline and workflows
-databricks bundle deploy
+# Deploy Azure resources with Terraform
+make deploy_infra
 
-# Start the pipeline
-databricks jobs run-now --job-id <pipeline-job-id>
+# Or manually
+cd infrastructure/terraform
+source .env
+terraform init
+terraform apply
 ```
 
-### 4. Train ML Model
+### 4. Deploy Databricks Bundle
 
 ```bash
-# Execute ML training pipeline
-databricks notebooks run /Workspace/src/lakehouse/models/training.py
+# Validate bundle configuration
+databricks bundle validate
+
+# Deploy to production
+databricks bundle deploy --target prod
 ```
 
-## Data Pipeline
+### 5. Run the Pipeline
 
-### Synthetic Data Generation
+The deployment includes three automated jobs configured in `resources/`:
 
-The platform includes a sophisticated **IoT data simulator** that generates realistic industrial sensor data:
-
-```python
-# 100 devices across 5 facilities
-devices: 100
-facilities: ["Factory_A", "Factory_B", "Warehouse_1", "Warehouse_2", "Office_Complex"]
-
-# Sensor types with realistic patterns
-sensors: [temperature, humidity, pressure, vibration, flow_rate, power_consumption]
-
-# Failure simulation with MTBF patterns
-failure_prediction_window: 7 days
-accuracy_target: >92%
-```
-
-### Real-time Processing
-
-```python
-# Streaming telemetry processing
-@dp.table(
-    name="silver.telemetry_clean",
-    table_properties={"quality": "silver"}
-)
-@dp.expect_all({
-    "valid_device_id": "device_id IS NOT NULL",
-    "reasonable_temperature": "temperature BETWEEN -50 AND 150",
-    "reasonable_vibration": "vibration BETWEEN 0 AND 100"
-})
-def telemetry_clean():
-    return (
-        spark.readStream.table("bronze.telemetry_raw")
-        .withColumn("processing_time", F.current_timestamp())
-        .join(device_master, "device_id")
-    )
-```
-
-### Feature Engineering
-
-- **Time-series features**: Rolling windows, lag features, trend analysis
-- **Device-specific patterns**: Maintenance cycles, usage patterns
-- **Environmental factors**: Temperature, humidity, operational conditions
-- **Health indicators**: Composite scores, anomaly detection
+- **Delta Live Tables Pipeline** (`lakehouse_pipeline.yml`): Bronze → Silver → Gold ETL
+- **Model Deployment** (`model_deployment.yml`): Promotes Challenger to Champion
+- **Model Inference** (`model_inference.yml`): Runs predictions with Champion model
 
 ## Project Structure
 
 ```
-databricks-iot/
-├── src/lakehouse/           # Data pipeline layers
-│   ├── bronze/             # Raw data ingestion
-│   ├── silver/             # Data cleansing
-│   ├── gold/               # Analytics features
-│   └── models/             # ML training
-├── infrastructure/         # Terraform IaC
-│   └── terraform/
-│       ├── modules/azure/     # Azure resources
-│       └── modules/databricks/# Databricks config
-├── src/data_simulation/    # IoT data generator
-├── notebooks/              # Analysis notebooks
-├── tests/                  # Comprehensive testing
-├── resources/              # Databricks bundles
-└── config.yaml            # Configuration
+databrick_iot/
+├── src/
+│   ├── data_simulation/          # IoT data generator
+│   │   ├── iot_data_generator.py # Synthetic device/telemetry generator
+│   │   ├── azure_uploader.py     # Upload to Azure Data Lake
+│   │   └── config.py             # Data generation configuration
+│   └── lakehouse/
+│       ├── bronze/               # Raw data ingestion layer
+│       │   └── bronze_ingestion.py
+│       ├── silver/               # Data cleansing layer
+│       │   └── silver_cleansing.py
+│       ├── gold/                 # Feature engineering layer
+│       │   └── gold_features.py
+│       └── models/               # ML pipeline
+│           ├── training.py       # Model training with MLflow
+│           ├── deployment.py     # Challenger → Champion promotion
+│           └── inference.py      # Champion model predictions
+├── infrastructure/
+│   └── terraform/                # IaC for Azure resources
+│       ├── main.tf
+│       ├── modules/
+│       │   ├── azure/           # Azure Data Lake, Storage
+│       │   └── databricks/      # Databricks workspace config
+│       └── ...
+├── resources/                    # Databricks Asset Bundles
+│   ├── lakehouse_pipeline.yml   # DLT pipeline configuration
+│   ├── model_deployment.yml     # Deployment job
+│   └── model_inference.yml      # Inference job
+├── tests/                        # Unit tests
+│   ├── test_config.py
+│   ├── test_iot_data_generator.py
+│   └── conftest.py
+├── .github/workflows/
+│   └── deploy.yml               # CI/CD pipeline
+├── databricks.yml               # Bundle configuration
+├── config.yaml                  # Data generation config
+├── Makefile                     # Common tasks
+└── pyproject.toml               # Project dependencies
 ```
 
-## Testing Strategy
+## Data Generation
 
-### Comprehensive Test Suite
+The synthetic data generator creates realistic IoT scenarios:
+
+### Device Types
+
+- Temperature sensors, humidity sensors, pressure sensors
+- Vibration sensors, flow meters, power meters
+- Smart valves, motor controllers
+
+### Generated Data
+
+- **Device Master**: 100 devices across 5 facilities
+- **Telemetry**: 5-minute intervals, 168 hours (7 days)
+- **Failures**: Realistic MTBF patterns, multiple failure types
+- **Maintenance**: Preventive, corrective, predictive events
+
+### Configuration
+
+All generation parameters are in `config.yaml`:
+
+```yaml
+devices:
+  num_devices: 100
+
+data_periods:
+  telemetry_hours: 168
+  failure_days: 90
+  maintenance_days: 180
+
+failures:
+  mtbf_days: 45
+```
+
+## MLOps Pipeline Details
+
+### Training Pipeline
+
+**File**: `src/lakehouse/models/training.py`
+
+**Key Features**:
+
+- Custom `PredictiveMaintenancePreprocessor` class
+- Complete scikit-learn pipeline (preprocessing + model)
+- Python 3.13 type hints throughout
+- MLflow logging with Unity Catalog signatures
+- Tracks `latest_training_hour_bucket` for inference filtering
+
+**Model Registration**:
+
+```python
+# Logs model to Unity Catalog with Challenger alias
+mlflow.sklearn.log_model(
+    pipeline,
+    "model",
+    registered_model_name="production.gold.predictive_maintenance_pipeline",
+    signature=signature
+)
+client.set_registered_model_alias(model_name, "Challenger", version)
+```
+
+### Deployment Pipeline
+
+**File**: `src/lakehouse/models/deployment.py`
+
+**Deployment Strategy**:
+
+1. Retrieve current Challenger model version
+2. Retire existing Champion (move to Retired alias)
+3. Promote Challenger to Champion
+4. Clean up Challenger alias
+
+**Unity Catalog Aliases**:
+
+- **Challenger**: Newly trained model awaiting promotion
+- **Champion**: Current production model
+- **Retired**: Previous production model (rollback option)
+
+### Inference Pipeline
+
+**File**: `src/lakehouse/models/inference.py`
+
+**Inference Flow**:
+
+1. Load Champion model from Unity Catalog
+2. Retrieve training cutoff timestamp from model metadata
+3. Filter gold features for data after training cutoff
+4. Generate predictions with Champion model
+5. Save predictions to `production.gold.predictive_maintenance_predictions`
+
+**Key Feature**: Prevents data leakage by only scoring data newer than training set
+
+## CI/CD Workflow
+
+**File**: `.github/workflows/deploy.yml`
+
+### Automated Steps
+
+1. **Code checkout**
+2. **Python 3.13 setup** with uv package manager
+3. **Unit tests** with pytest
+4. **Databricks CLI setup**
+5. **Bundle validation**
+6. **Production deployment** using service principal authentication
+
+### Secrets Required
+
+- `DATABRICKS_HOST`
+- `ARM_TENANT_ID`
+- `ARM_CLIENT_ID`
+- `ARM_CLIENT_SECRET`
+
+## Testing
 
 ```bash
-# Run all tests with coverage
+# Run all tests
+uv run pytest tests/ -v
+
+# Run with coverage
 uv run pytest tests/ --cov=src --cov-report=html
 
-
+# Run specific test file
+uv run pytest tests/test_iot_data_generator.py -v
 ```
-
-### Quality Assurance
-
-- **Data Quality Expectations**: Automated validation rules
-- **Schema Evolution Testing**: Backward compatibility
-- **Model Performance Testing**: Accuracy benchmarks
-- **Pipeline Testing**: End-to-end data flow validation
-
-## Deployment & Operations
-
-### Monitoring & Alerting
-
-- **Data Quality Monitoring**: Automated data validation
-- **Model Performance Tracking**: Drift detection and alerts
-- **Pipeline Health**: Success/failure notifications
-- **Cost Optimization**: Resource usage monitoring
 
 ## Professional Skills Demonstrated
 
-### Databricks Expertise
+### Databricks & Data Engineering
 
-- ✅ **Unity Catalog**: Data governance and discovery
-- ✅ **Delta Live Tables**: Declarative ETL pipelines
-- ✅ **MLflow Integration**: Complete ML lifecycle management
-- ✅ **Structured Streaming**: Real-time data processing
-- ✅ **Performance Optimization**: Cluster tuning and cost management
+✅ Delta Live Tables with declarative ETL  
+✅ Unity Catalog for governance and model registry  
+✅ Medallion architecture (Bronze/Silver/Gold)  
+✅ Serverless compute optimization  
+✅ Delta Lake for ACID transactions
 
-### Cloud Architecture
+### MLOps & Machine Learning
 
-- ✅ **Infrastructure as Code**: Terraform automation
-- ✅ **Azure Integration**: Data Lake, Storage, Security
-- ✅ **Scalable Design**: Auto-scaling and serverless compute
-- ✅ **Security Best Practices**: RBAC, encryption, networking
-
-### MLOps & Data Science
-
-- ✅ **End-to-End ML Pipelines**: Training to deployment
-- ✅ **Model Monitoring**: Drift detection and retraining
-- ✅ **Feature Engineering**: Time-series and domain expertise
-- ✅ **Production ML**: A/B testing and gradual rollouts
+✅ End-to-end ML pipeline (training → deployment → inference)  
+✅ Unity Catalog alias-based deployment strategy  
+✅ Custom scikit-learn transformers and pipelines  
+✅ MLflow experiment tracking and model versioning  
+✅ Training metadata tracking for inference filtering  
+✅ Data leakage prevention in inference pipeline
 
 ### Software Engineering
 
-- ✅ **Clean Code**: Maintainable, documented, tested
-- ✅ **Version Control**: Git workflows and collaboration
-- ✅ **CI/CD**: Automated testing and deployment
-- ✅ **Documentation**: Comprehensive technical documentation
+✅ Modern Python 3.13 with type hints (PEP 685, 604, 673)  
+✅ Comprehensive unit testing with pytest  
+✅ Clean, maintainable code architecture  
+✅ Configuration-driven design (YAML configs)  
+✅ CI/CD automation with GitHub Actions
+
+### Cloud & DevOps
+
+✅ Infrastructure as Code with Terraform  
+✅ Azure Data Lake Gen2 integration  
+✅ Databricks Asset Bundles for deployment  
+✅ Service principal authentication  
+✅ Automated testing and deployment pipelines
 
 ## Contact & Collaboration
 
 **Available for freelance data engineering and MLOps projects**
 
 - **LinkedIn**: https://www.linkedin.com/in/mory-kaba-80b5641a0/
+- **GitHub**: https://github.com/m-l-kaba
 
-### Specializations
+### Expertise Areas
 
-- **Databricks Platform Engineering**
-- **MLOps Pipeline Development**
-- **Azure Cloud Architecture**
-- **Real-time Data Processing**
-- **Predictive Analytics Solutions**
+- Databricks Platform Engineering
+- MLOps Pipeline Development
+- Azure Cloud Architecture
+- Data Engineering & ETL
+- Machine Learning in Production
 
 ---

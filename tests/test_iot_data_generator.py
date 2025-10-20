@@ -82,18 +82,22 @@ def test_telemetry_reading_dataclass():
     """Test TelemetryReading dataclass"""
     reading = TelemetryReading(
         device_id="TEST_001",
-        timestamp="2023-10-13T10:00:00",
-        reading_type="temperature",
-        value=25.5,
-        unit="celsius",
-        quality="good",
+        timestamp="2023-10-13T10:00:00.000000",
+        temperature=25.5,
+        pressure=1000.0,
+        vibration=8.0,
+        humidity=50.0,
+        power_consumption=350.0,
+        flow_rate=30.0,
+        valve_position=50.0,
+        motor_speed=2000.0,
         location="Test_Location",
         facility="Test_Facility",
     )
 
     assert reading.device_id == "TEST_001"
-    assert reading.value == 25.5
-    assert reading.quality == "good"
+    assert reading.temperature == 25.5
+    assert reading.pressure == 1000.0
 
 
 def test_iot_data_generator_init():
@@ -117,10 +121,10 @@ def test_device_generation():
         assert device.facility in generator.facilities
         assert device.manufacturer in generator.manufacturers
 
-        # Test date formatting
-        datetime.fromisoformat(device.installation_date)
-        datetime.fromisoformat(device.last_maintenance)
-        datetime.fromisoformat(device.next_scheduled_maintenance)
+        # Test date formatting - remove .000000 suffix before parsing
+        datetime.fromisoformat(device.installation_date.replace(".000000", ""))
+        datetime.fromisoformat(device.last_maintenance.replace(".000000", ""))
+        datetime.fromisoformat(device.next_scheduled_maintenance.replace(".000000", ""))
 
 
 def test_generate_all_data():
