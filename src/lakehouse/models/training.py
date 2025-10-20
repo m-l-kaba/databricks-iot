@@ -39,7 +39,6 @@ mlflow.set_registry_uri("databricks-uc")
 
 
 class PredictiveMaintenancePreprocessor(BaseEstimator, TransformerMixin):
-
     def __init__(self) -> None:
         self.label_encoders: dict[str, LabelEncoder] = {}
         self.numerical_medians: dict[str, float] = {}
@@ -240,7 +239,7 @@ def load_and_explore_data() -> pd.DataFrame:
 
     target_dist = df["will_fail"].value_counts()
     logger.info(f"Target variable distribution: {target_dist.to_dict()}")
-    logger.info(f"Class imbalance ratio: {target_dist[0]/target_dist[1]:.2f}:1")
+    logger.info(f"Class imbalance ratio: {target_dist[0] / target_dist[1]:.2f}:1")
 
     missing_data = df.isnull().sum()
     if missing_data.any():

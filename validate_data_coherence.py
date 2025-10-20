@@ -26,7 +26,7 @@ def validate_data_coherence(output_dir="./output"):
         with open(f"{output_dir}/maintenance.json") as f:
             maintenance = json.load(f)
     except FileNotFoundError as e:
-        print(f"❌ Error loading data files: {e}")
+        print(f"Error loading data files: {e}")
         return False
 
     device_ids = set([d["device_id"] for d in devices])
@@ -34,7 +34,7 @@ def validate_data_coherence(output_dir="./output"):
     failure_ids = set([f["device_id"] for f in failures]) if failures else set()
     maint_ids = set([m["device_id"] for m in maintenance]) if maintenance else set()
 
-    print(f"📊 Dataset Overview:")
+    print(f"Dataset Overview:")
     print(f"  Device Master: {len(devices)} devices")
     print(f"  Telemetry: {len(telemetry)} readings from {len(telemetry_ids)} devices")
     print(f"  Failures: {len(failures)} events from {len(failure_ids)} devices")
@@ -42,29 +42,29 @@ def validate_data_coherence(output_dir="./output"):
 
     orphan_telemetry = telemetry_ids - device_ids
     if orphan_telemetry:
-        print(f"❌ Orphan telemetry devices: {orphan_telemetry}")
+        print(f"Orphan telemetry devices: {orphan_telemetry}")
         return False
     else:
-        print("✅ All telemetry data references valid devices")
+        print("All telemetry data references valid devices")
 
     # Validation 2: All failures reference valid devices
     orphan_failures = failure_ids - device_ids
     if orphan_failures:
-        print(f"❌ Orphan failure devices: {orphan_failures}")
+        print(f"Orphan failure devices: {orphan_failures}")
         return False
     else:
-        print("✅ All failure data references valid devices")
+        print("All failure data references valid devices")
 
     # Validation 3: All maintenance references valid devices
     orphan_maint = maint_ids - device_ids
     if orphan_maint:
-        print(f"❌ Orphan maintenance devices: {orphan_maint}")
+        print(f"Orphan maintenance devices: {orphan_maint}")
         return False
     else:
-        print("✅ All maintenance data references valid devices")
+        print("All maintenance data references valid devices")
 
     # Validation 4: Check timestamp formats
-    print("\n🕐 Timestamp Format Validation:")
+    print("\nTimestamp Format Validation:")
 
     # Check device master timestamps
     sample_device = devices[0]
@@ -76,18 +76,18 @@ def validate_data_coherence(output_dir="./output"):
         datetime.fromisoformat(
             sample_device["next_scheduled_maintenance"].replace(".000000", "")
         )
-        print("✅ Device master timestamps are properly formatted")
+        print("Device master timestamps are properly formatted")
     except Exception as e:
-        print(f"❌ Device master timestamp format error: {e}")
+        print(f"Device master timestamp format error: {e}")
         return False
 
     # Check telemetry timestamps
     sample_telemetry = telemetry[0]
     try:
         datetime.fromisoformat(sample_telemetry["timestamp"].replace(".000000", ""))
-        print("✅ Telemetry timestamps are properly formatted")
+        print("Telemetry timestamps are properly formatted")
     except Exception as e:
-        print(f"❌ Telemetry timestamp format error: {e}")
+        print(f"Telemetry timestamp format error: {e}")
         return False
 
     # Validation 5: Check required fields exist
@@ -111,10 +111,10 @@ def validate_data_coherence(output_dir="./output"):
     device_fields = set(devices[0].keys())
     missing_device_fields = set(required_device_fields) - device_fields
     if missing_device_fields:
-        print(f"❌ Missing device master fields: {missing_device_fields}")
+        print(f"Missing device master fields: {missing_device_fields}")
         return False
     else:
-        print("✅ Device master has all required fields")
+        print("Device master has all required fields")
 
     # Telemetry required fields
     required_telemetry_fields = [
@@ -135,10 +135,10 @@ def validate_data_coherence(output_dir="./output"):
     telemetry_fields = set(telemetry[0].keys())
     missing_telemetry_fields = set(required_telemetry_fields) - telemetry_fields
     if missing_telemetry_fields:
-        print(f"❌ Missing telemetry fields: {missing_telemetry_fields}")
+        print(f"Missing telemetry fields: {missing_telemetry_fields}")
         return False
     else:
-        print("✅ Telemetry has all required fields")
+        print("Telemetry has all required fields")
 
     # Validation 6: Check temporal coherence
     print("\n⏰ Temporal Coherence Validation:")
@@ -158,10 +158,10 @@ def validate_data_coherence(output_dir="./output"):
             temporal_errors += 1
 
     if temporal_errors > 0:
-        print(f"❌ {temporal_errors} failures occur before device installation")
+        print(f"{temporal_errors} failures occur before device installation")
         return False
     else:
-        print("✅ All failures occur after device installation")
+        print("All failures occur after device installation")
 
     # Validation 7: Check data distribution for ML
     print("\n🎯 ML Readiness Validation:")
@@ -191,8 +191,8 @@ def validate_data_coherence(output_dir="./output"):
     print(f"  Devices with telemetry: {devices_with_telemetry_pct:.1f}%")
     print(f"  Devices with failures: {devices_with_failures_pct:.1f}%")
 
-    print("\n🎉 Data coherence validation completed successfully!")
-    print("✅ Generated data is ready for the Databricks pipeline")
+    print("\n Data coherence validation completed successfully!")
+    print("Generated data is ready for the Databricks pipeline")
     return True
 
 
@@ -203,7 +203,7 @@ def validate_join_keys():
     # Simulate the main joins that happen in the pipeline
     print("  Testing device_id joins...")
     print("  Testing timestamp alignment...")
-    print("  ✅ All join keys are properly formatted")
+    print("  All join keys are properly formatted")
 
 
 if __name__ == "__main__":
@@ -215,8 +215,8 @@ if __name__ == "__main__":
     validate_join_keys()
 
     if success:
-        print("\n✅ ALL VALIDATIONS PASSED - Data is coherent and pipeline-ready!")
+        print("\nALL VALIDATIONS PASSED - Data is coherent and pipeline-ready!")
         sys.exit(0)
     else:
-        print("\n❌ VALIDATION FAILED - Please fix data generation issues")
+        print("\nVALIDATION FAILED - Please fix data generation issues")
         sys.exit(1)

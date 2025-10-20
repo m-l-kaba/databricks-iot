@@ -1,0 +1,22 @@
+resources:
+  jobs:
+    predictive_maintenance_model_inference:
+      name: "Predictive Maintenance - Model Inference"
+
+      tasks:
+        - task_key: "run_inference"
+          spark_python_task:
+            python_file: "../src/lakehouse/models/inference.py"
+          job_cluster_key: "inference_cluster"
+
+      job_clusters:
+        - job_cluster_key: "inference_cluster"
+          new_cluster:
+            spark_version: "17.2.x-scala2.13"
+            node_type_id: "Standard_DS3_v2"
+            num_workers: 0
+            spark_conf:
+              "spark.databricks.cluster.profile": "singleNode"
+              "spark.master": "local[*]"
+            custom_tags:
+              "ResourceClass": "SingleNode"

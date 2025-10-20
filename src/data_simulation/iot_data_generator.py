@@ -175,7 +175,7 @@ class IoTDataGenerator:
                 next_maintenance = self._random_date_in_future(days=90)  # Next 3 months
 
             # Use consistent device ID format for all devices
-            device_id = f"DEV_{str(i+1).zfill(3)}"  # DEV_001, DEV_002, etc.
+            device_id = f"DEV_{str(i + 1).zfill(3)}"  # DEV_001, DEV_002, etc.
 
             device = Device(
                 device_id=device_id,
@@ -184,8 +184,8 @@ class IoTDataGenerator:
                 facility=facility,
                 installation_date=installation_date.isoformat()
                 + ".000000",  # Match expected format
-                firmware_version=f"{random.randint(1,5)}.{random.randint(0,9)}.{random.randint(0,9)}",
-                model=f"{device_type.value.upper()}-{random.randint(100,999)}",
+                firmware_version=f"{random.randint(1, 5)}.{random.randint(0, 9)}.{random.randint(0, 9)}",
+                model=f"{device_type.value.upper()}-{random.randint(100, 999)}",
                 manufacturer=random.choice(self.manufacturers),
                 status=random.choices(
                     list(self.device_status_weights.keys()),
