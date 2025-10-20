@@ -48,7 +48,7 @@ def main():
 
     predictions = run_inference(model_name, input_data_pd)
 
-    input_data_pd["will_fail_prediction"] = predictions.to_list()
+    input_data_pd["will_fail_prediction"] = predictions.tolist()
 
     output_df = spark.createDataFrame(input_data_pd)
 
