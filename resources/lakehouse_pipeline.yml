@@ -3,7 +3,6 @@ resources:
   pipelines:
     lakehouse_pipeline:
       name: lakehouse_pipeline
-      ## Catalog is required for serverless compute
       catalog: production
       schema: raw
       serverless: true
@@ -17,5 +16,4 @@ resources:
         - notebook:
             path: ../src/lakehouse/gold/gold_features.py
 
-      # Development vs Production settings
       continuous: false

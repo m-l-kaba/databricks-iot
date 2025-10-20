@@ -20,11 +20,13 @@ from sklearn.utils.class_weight import compute_class_weight
 import mlflow
 import mlflow.sklearn
 from mlflow.models import infer_signature
+from mlflow.tracking import MlflowClient
+
 from datetime import datetime
 import warnings
 import logging
-from typing import Any, Self
-from collections.abc import Sequence
+from typing import Self
+
 
 warnings.filterwarnings("ignore")
 
@@ -589,6 +591,8 @@ def train_gradient_boosting_model_with_pipeline(
     class_weight_dict: dict[int, float] = dict(zip(np.unique(y_train), class_weights))
     logger.info(f"Calculated class weights: {class_weight_dict}")
 
+    client = MlflowClient()
+
     # Get latest timestamp from training data
     latest_training_timestamp: pd.Timestamp = original_df["hour_bucket"].max()
     logger.info(f"Latest training timestamp: {latest_training_timestamp}")
@@ -699,11 +703,16 @@ def train_gradient_boosting_model_with_pipeline(
 
         signature = infer_signature(X_train, y_test_pred)
 
-        mlflow.sklearn.log_model(
+        model_info = mlflow.sklearn.log_model(
             sk_model=best_pipeline,
-            artifact_path="complete_pipeline",
-            signature=signature,
             registered_model_name="production.gold.predictive_maintenance_pipeline",
+            signature=signature,
+        )
+
+        client.set_registered_model_alias(
+            "production.gold.predictive_maintenance_pipeline",
+            "Challenger",
+            model_info.registered_model_version,
         )
 
         logger.info(
@@ -724,138 +733,6 @@ def train_gradient_boosting_model_with_pipeline(
         logger.debug(f"\n{confusion_matrix(y_test, y_test_pred)}")
 
         return best_pipeline, metrics, feature_importance
-
-
-def train_gradient_boosting_model(
-    X_train: pd.DataFrame,
-    y_train: pd.Series,
-    X_test: pd.DataFrame,
-    y_test: pd.Series,
-    use_grid_search: bool = True,
-) -> tuple[GradientBoostingClassifier, dict[str, float], pd.DataFrame]:
-    logger.info("Training Gradient Boosting classifier...")
-
-    class_weights = compute_class_weight(
-        "balanced", classes=np.unique(y_train), y=y_train
-    )
-    class_weight_dict = dict(zip(np.unique(y_train), class_weights))
-    logger.info(f"Calculated class weights: {class_weight_dict}")
-
-    with mlflow.start_run(
-        run_name=f"gradient_boost_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-    ):
-
-        if use_grid_search:
-            logger.info("Performing hyperparameter tuning...")
-
-            param_grid = {
-                "n_estimators": [50, 100],
-                "max_depth": [3, 5],
-                "learning_rate": [0.1, 0.2],
-                "min_samples_split": [5, 10],
-            }
-
-            gb_model = GradientBoostingClassifier(random_state=42, verbose=0)
-
-            cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
-
-            try:
-                grid_search = GridSearchCV(
-                    estimator=gb_model,
-                    param_grid=param_grid,
-                    cv=cv,
-                    scoring="roc_auc",
-                    n_jobs=1,
-                    verbose=0,
-                    error_score="raise",
-                )
-
-                grid_search.fit(X_train, y_train)
-
-                best_model = grid_search.best_estimator_
-
-                mlflow.log_params(grid_search.best_params_)
-                mlflow.log_param("cv_score", grid_search.best_score_)
-
-                logger.info(f"Best parameters: {grid_search.best_params_}")
-                logger.info(f"Best CV score: {grid_search.best_score_:.4f}")
-
-            except Exception as e:
-                logger.error(f"Grid search failed: {e}")
-                logger.info("Falling back to default parameters...")
-                use_grid_search = False
-
-        if not use_grid_search:
-            logger.info("Using default parameters...")
-            best_model = GradientBoostingClassifier(
-                n_estimators=100,
-                max_depth=5,
-                learning_rate=0.1,
-                min_samples_split=10,
-                random_state=42,
-                verbose=0,
-            )
-
-            best_model.fit(X_train, y_train)
-
-            mlflow.log_param("n_estimators", 100)
-            mlflow.log_param("max_depth", 5)
-            mlflow.log_param("learning_rate", 0.1)
-            mlflow.log_param("min_samples_split", 10)
-            mlflow.log_param("tuning_method", "default_params")
-
-        y_train_pred = best_model.predict(X_train)
-        y_test_pred = best_model.predict(X_test)
-        y_test_proba = best_model.predict_proba(X_test)[:, 1]
-
-        metrics = {}
-
-        metrics["train_accuracy"] = accuracy_score(y_train, y_train_pred)
-        metrics["train_precision"] = precision_score(
-            y_train, y_train_pred, zero_division=0
-        )
-        metrics["train_recall"] = recall_score(y_train, y_train_pred, zero_division=0)
-        metrics["train_f1"] = f1_score(y_train, y_train_pred, zero_division=0)
-
-        metrics["test_accuracy"] = accuracy_score(y_test, y_test_pred)
-        metrics["test_precision"] = precision_score(
-            y_test, y_test_pred, zero_division=0
-        )
-        metrics["test_recall"] = recall_score(y_test, y_test_pred, zero_division=0)
-        metrics["test_f1"] = f1_score(y_test, y_test_pred, zero_division=0)
-        metrics["test_auc"] = roc_auc_score(y_test, y_test_proba)
-
-        for metric_name, metric_value in metrics.items():
-            mlflow.log_metric(metric_name, metric_value)
-
-        feature_importance = pd.DataFrame(
-            {"feature": X_train.columns, "importance": best_model.feature_importances_}
-        ).sort_values("importance", ascending=False)
-
-        logger.info("Top 10 Feature Importances:")
-        for _, row in feature_importance.head(10).iterrows():
-            logger.info(f"  {row['feature']}: {row['importance']:.4f}")
-
-        signature = infer_signature(X_test, y_test_pred)
-        mlflow.sklearn.log_model(
-            sk_model=best_model,
-            registered_model_name="production.gold.predictive_maintenance_gb",
-            signature=signature,
-        )
-        logger.info("=== Model Performance ===")
-        logger.info(f"Test Accuracy: {metrics['test_accuracy']:.4f}")
-        logger.info(f"Test Precision: {metrics['test_precision']:.4f}")
-        logger.info(f"Test Recall: {metrics['test_recall']:.4f}")
-        logger.info(f"Test F1 Score: {metrics['test_f1']:.4f}")
-        logger.info(f"Test AUC: {metrics['test_auc']:.4f}")
-
-        logger.debug("Classification Report:")
-        logger.debug(f"\n{classification_report(y_test, y_test_pred)}")
-
-        logger.debug("Confusion Matrix:")
-        logger.debug(f"\n{confusion_matrix(y_test, y_test_pred)}")
-
-        return best_model, metrics, feature_importance
 
 
 def main() -> tuple[Pipeline, dict[str, float], pd.DataFrame]:
@@ -914,4 +791,5 @@ def main() -> tuple[Pipeline, dict[str, float], pd.DataFrame]:
         raise e
 
 
-pipeline, metrics, feature_importance = main()
+if __name__ == "__main__":
+    pipeline, metrics, feature_importance = main()
