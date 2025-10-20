@@ -1,3 +1,5 @@
+"""Inference module for predictive maintenance model."""
+
 from mlflow.tracking import MlflowClient
 import pyspark.sql.functions as F
 import pandas as pd
