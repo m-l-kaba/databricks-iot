@@ -20,3 +20,4 @@ resources:
               "spark.master": "local[*]"
             custom_tags:
               "ResourceClass": "SingleNode"
+            data_security_mode: "SINGLE_USER"
