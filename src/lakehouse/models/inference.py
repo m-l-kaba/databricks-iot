@@ -18,7 +18,7 @@ def run_inference(model_name: str, input_data: pd.DataFrame) -> np.ndarray:
     Returns:
         Predictions from the model.
     """
-    model = mlflow.sklearn.load_model(f"models:/{model_name}@Champion")
+    model = mlflow.sklearn.load_model(f"models:/production.gold.{model_name}@Champion")
     predictions = model.predict(input_data)
     return predictions
 
