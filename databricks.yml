@@ -16,5 +16,5 @@ targets:
     permissions:
       - user_name: m.leon.kaba@gmail.com
         level: CAN_MANAGE
-      - service_principal_name: databricks-iot
+      - service_principal_name: 2eb1d1d5-c051-470a-bfb0-311facbb0a01
         level: CAN_MANAGE
